@@ -1,0 +1,19 @@
+{
+  "agents": [
+    { "name": "eslint", "description": "JavaScript linter for code quality.", "type": "linter", "entrypoint": "popup/popup.js, background.js" },
+    { "name": "prettier", "description": "Code formatter for consistent style.", "type": "formatter", "entrypoint": "popup/popup.js, background.js" },
+    { "name": "jsdoc", "description": "Documentation generator for JavaScript files.", "type": "documentation", "entrypoint": "popup/popup.js, background.js" },
+    { "name": "json-schema-validator", "description": "Validates JSON files against schemas (manifest, protocol entries).", "type": "validator", "entrypoint": "manifest.json" },
+    { "name": "chrome-manifest-linter", "description": "Validates Chrome extension manifest (MV3 syntax, permissions, icons).", "type": "validator", "entrypoint": "manifest.json" },
+    { "name": "chrome-api-type-checker", "description": "Ensures Chrome.* API calls (prompt, summarizer, storage, runtime) are valid and supported.", "type": "validator", "entrypoint": "background.js" },
+    {
+      "name": "lockb0x-schema-validator",
+      "description": "Validates generated Codex Entries and Certificates against the Lockb0x v0.0.2 schema and canonical JSON rules.",
+      "type": "validator",
+      "entrypoint": "background.js, popup/popup.js, schemas/codex-entry.json"
+    },
+    { "name": "webpack-bundler", "description": "Builds and bundles Chrome extension scripts for MV3 (popup, background, content).", "type": "builder", "entrypoint": "webpack.config.js" },
+    { "name": "extension-test-runner", "description": "Automated tests for popup, side panel, and service worker logic using Puppeteer.", "type": "tester", "entrypoint": "tests/" },
+    { "name": "markdownlint", "description": "Linter for Markdown files.", "type": "linter", "entrypoint": "DEVELOPMENT-PLAN.md" }
+  ]
+}
