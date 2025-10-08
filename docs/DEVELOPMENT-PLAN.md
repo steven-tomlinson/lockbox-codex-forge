@@ -1,9 +1,3 @@
-I've generated a comprehensive Markdown specification for the **Codex Forge: AI-Assisted Lockb0x Entry Creator**. You can directly add this to your project repository.
-
-This specification details the architecture (Manifest V3), component responsibilities, required dependencies, and the step-by-step implementation of the core Lockb0x v0.0.2 protocol features, focusing on leveraging the Chrome AI APIs.
-
------
-
 # 🚀 Codex Forge: AI-Assisted Lockb0x Entry Creator
 
 **Project Goal:** A Chrome Extension (Manifest V3) that streamlines the creation of valid Lockb0x Codex Entries (v0.0.2) from web content or user-uploaded files, using Chrome's built-in AI for automated metadata generation.
@@ -52,17 +46,57 @@ The Service Worker (`background.js`) contains all the heavy, non-UI protocol log
 
 -----
 
+
 ### Phase 2: Chrome AI Integration and Metadata
 
-This phase integrates the unique hackathon features utilizing Chrome's built-in AI APIs to populate the `identity` object.
+This phase integrates Chrome's built-in AI APIs to populate the `identity` object and certificate summary.
 
 | ID | Task | Chrome API | Lockb0x Field |
 | :--- | :--- | :--- | :--- |
 | **P2.1** | **Content Extraction** | `chrome.scripting.executeScript` | Collect all visible text from the `activeTab` or read uploaded file contents. |
 | **P2.2** | **AI Subject Generation** | **`chrome.summarizer` / `Prompt API`** | Summarize the extracted content to fill **`identity.subject`** (human-readable description). **Flag this output as AI-generated.** |
 | **P2.3** | **Process Tagging** | **`Prompt API` / `Writer API`** | Generate a concise tag (e.g., "AI-Summarized-Web-Page", "File-Upload-Hashed") for **`identity.process`**. |
-| **P2.4** | **Anchor Stub Generation** | N/A | Implement a dropdown/logic in the Service Worker to generate compliant mock `anchor` fields (e.g., `chain: "eip155:5"`, `tx: "0x{random_hash}"`). |
+| **P2.4** | **Anchor Selection** | N/A | Add UI and logic to select between mock and Google anchor. |
 | **P2.5** | **Certificate Summary** | **`Prompt API`** | Pass the final JSON object to the Prompt API to generate the polished, natural-language "Certificate Summary" for the UX. |
+
+-----
+
+### Phase 3: Google Anchor Integration & Authentication
+
+This phase enables real Google Anchor creation and Google authentication for users with Google accounts and Drive access.
+
+| ID | Task | API/Component | Lockb0x Field |
+| :--- | :--- | :--- | :--- |
+| **P3.1** | **Google OAuth Authentication** | Chrome Identity API | Authenticate user with Google account. |
+| **P3.2** | **Google Anchor Adapter** | Google Cloud Anchor API (or Drive API) | Generate anchor object using Google anchor data. |
+| **P3.3** | **Anchor Selection UI** | Popup UI | Allow user to select anchor type (mock or Google). |
+| **P3.4** | **Error Handling & Fallback** | All | Gracefully handle authentication or anchor creation errors. |
+| **P3.5** | **Documentation & Flow** | Docs/README | Document Google flow and use-case for Lockb0x protocol. |
+
+-----
+
+### Iterative Implementation Plan
+
+1. **Scaffold Google Anchor Adapter:**
+    - Add stubbed function in `lib/protocol.js` for Google anchor creation.
+    - Document expected input/output and error handling.
+
+2. **Implement Google Authentication:**
+    - Use Chrome Identity API to authenticate user and obtain Google OAuth token.
+    - Store token securely for anchor creation.
+
+3. **Integrate Google Anchor Creation:**
+    - Use Google APIs to create and retrieve anchor data.
+    - Update entry creation flow to use Google anchor when selected.
+
+4. **Update UI for Anchor Selection:**
+    - Add dropdown or toggle in popup UI for anchor type selection.
+    - Display anchor details in generated entry.
+
+5. **Test & Polish:**
+    - Test end-to-end Google anchor flow.
+    - Handle errors and provide user feedback.
+    - Update documentation and README with Google flow instructions.
 
 -----
 

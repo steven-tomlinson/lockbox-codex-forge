@@ -15,12 +15,12 @@
     <br><br>
     <button type="button" id="extractPageBtn">Extract Page Content</button>
     <br><br>
-    <label for="anchorSelect">Anchor:</label>
-    <select id="anchorSelect">
-      <option value="eip155:5">EIP155: Goerli</option>
-      <option value="eip155:1">EIP155: Mainnet</option>
+    <label for="anchorType">Anchor Type:</label>
+    <select id="anchorType">
       <option value="mock">Mock Anchor</option>
+      <option value="google">Google Anchor</option>
     </select>
+    <button id="googleSignInBtn" style="display:none;">Sign in with Google</button>
     <br><br>
     <button type="submit" id="generateBtn">Generate Codex Entry</button>
   </form>
@@ -34,6 +34,6 @@
   </div>
   <div id="loading">Generating entry…</div>
   <div id="status" aria-live="polite"></div>
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>
