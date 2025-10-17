@@ -25,7 +25,7 @@
         "properties": {
           "protocol": {
             "type": "string",
-            "enum": ["ipfs", "https", "http", "s3", "filecoin", "arweave"],
+            "enum": ["ipfs", "https", "http", "s3", "filecoin", "arweave", "gdrive"],
             "description": "Storage backend protocol."
           },
           "location": {

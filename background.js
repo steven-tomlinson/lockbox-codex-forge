@@ -70,7 +70,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
         // Use 'https' for Google Drive storage protocol
         // Use a placeholder for Google Drive file URL/ID in location
-  let storageProtocol = anchorType === 'google' ? 'https' : 'http';
+  let storageProtocol = anchorType === 'google' ? 'gdrive' : 'http';
         let storageLocation = anchorType === 'google'
           ? 'https://drive.google.com/file/d/DRIVE_FILE_ID' // TODO: Replace with actual Drive file ID
           : filename;
