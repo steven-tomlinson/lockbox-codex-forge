@@ -127,8 +127,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'GOOGLE_AUTH_REQUEST') {
     chrome.identity.getAuthToken({ interactive: true }, (token) => {
       if (chrome.runtime.lastError || !token) {
-        console.error('[background] Google Auth error:', chrome.runtime.lastError);
-        sendResponse({ ok: false, error: chrome.runtime.lastError ? chrome.runtime.lastError.message : 'No token returned' });
+        const errMsg = chrome.runtime.lastError ? (chrome.runtime.lastError.message || JSON.stringify(chrome.runtime.lastError)) : 'No token returned';
+        console.error('[background] Google Auth error:', errMsg);
+        sendResponse({ ok: false, error: errMsg });
       } else {
         googleAuthToken = token;
         sendResponse({ ok: true, token });
@@ -248,6 +249,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           }
         }
         // Step 8: Validate entry before sending response
+        // Force protocol to 'gdrive' for Google anchor
+        if (anchorType === 'google') {
+          entry.storage.protocol = 'gdrive';
+        }
+  // Debug: Print protocol value before validation
+  console.log('[background] Debug protocol before validation:', entry.storage.protocol);
         const validation = await validateCodexEntry(entry);
         if (!validation.valid) {
           sendResponse({ ok: false, error: 'Schema validation failed', details: validation.errors });

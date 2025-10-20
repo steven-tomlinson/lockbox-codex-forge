@@ -160,7 +160,7 @@ entryForm.addEventListener('submit', (e) => {
       errorMsg += 'Full response object:\n' + JSON.stringify(response, null, 2) + '\n';
       if (response && response.error) {
         errorMsg += 'Error:\n';
-        errorMsg += typeof response.error === 'string' ? response.error + '\n' : JSON.stringify(response.error, null, 2) + '\n';
+        errorMsg += JSON.stringify(response.error, null, 2) + '\n';
       }
       // Always show the error array, even if empty or undefined
       if (response && 'details' in response) {
@@ -172,7 +172,7 @@ entryForm.addEventListener('submit', (e) => {
         }
       }
       statusDiv.textContent += errorMsg;
-      console.error('[popup] Failed to generate entry:', response);
+      console.error('[popup] Failed to generate entry:', JSON.stringify(response, null, 2));
       // Log the entry object for debugging
       if (response && response.entry) {
         console.log('[popup] Entry object:', response.entry);
