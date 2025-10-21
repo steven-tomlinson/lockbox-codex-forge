@@ -1,4 +1,3 @@
-
 # AGENTS.md — Code Review & Action Plan for Lockb0x Codex Forge
 
 ## Status Summary (as of 2025-10-14)
@@ -84,3 +83,24 @@
 ---
 
 This file is for all AI agents and contributors to track, fix, and improve the extension for hackathon and production readiness.
+
+# Lockb0x Codex Forge — Agents & Roles
+
+## Team Roles
+- Project Lead: Oversees development, documentation, and hackathon strategy
+- AI Integration: Implements Chrome AI APIs and metadata generation
+- Protocol Engineer: Develops and tests Lockb0x protocol logic
+- UI/UX Designer: Designs popup and user flows
+- Google Cloud Integration: Handles Google anchor API and authentication
+- QA & Testing: Conducts user testing and feedback collection
+
+## Hackathon Deliverable Assignments
+- README overhaul: Project Lead
+- Demo assets: UI/UX Designer
+- User feedback/testing summary: QA & Testing
+- Competitive analysis: Project Lead
+- Roadmap: Protocol Engineer
+- Submission checklist: Project Lead
+
+## Progress Tracking
+See DEVELOPMENT-PLAN.md for unified checklist and milestone status. Update roles and assignments as needed for hackathon readiness.

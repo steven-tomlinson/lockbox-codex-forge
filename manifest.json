@@ -32,5 +32,9 @@
       "resources": [ "lib/vendor/ajv.min.js" ],
       "matches": [ "<all_urls>" ]
     }
-  ]
+  ],
+  "oauth2": {
+    "client_id": "873765379611-13o84t331fnnpotv8hnqi8i8btesh3d1.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/userinfo.email"]
+  }
 }
