@@ -1,3 +1,12 @@
+// Utility to show error and recovery instructions in the popup
+function showError(message, recovery) {
+  statusDiv.textContent = `Error: ${message}`;
+  statusDiv.style.color = '#c62828';
+  if (recovery) {
+    statusDiv.textContent += `\nRecovery: ${recovery}`;
+  }
+  console.error('[popup] Error:', message, recovery || '');
+}
 import { uuidv4, sha256, niSha256, jcsStringify, signEntryCanonical, anchorMock, anchorGoogle } from '../lib/protocol.js';
 import { validateCodexEntry } from '../lib/validate.js';
 // popup.js - Handles popup UI logic for Lockb0x Protocol Codex Forge
@@ -16,36 +25,59 @@ const copyBtn = document.getElementById('copyBtn');
 const statusDiv = document.getElementById('status');
 
 let extractedData = '';
+let extractedBytes = null;
 let metadata = {};
 let googleAuthToken = null;
+
+// Load token from chrome.storage on startup
+chrome.storage.local.get(['googleAuthToken'], (result) => {
+  if (result && result.googleAuthToken) {
+    googleAuthToken = result.googleAuthToken;
+  }
+});
 
 
 fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   console.log('[popup] File input changed:', file);
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(evt) {
+  if (!file) {
+    showError('No file selected.', 'Please choose a file to upload.');
+    return;
+  }
+  const isText = file.type.startsWith('text') || file.name.match(/\.(txt|md|json)$/i);
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    if (isText) {
       extractedData = evt.target.result;
-      statusDiv.textContent = `Loaded file: ${file.name}`;
-      console.log('[popup] File loaded:', file.name);
-    };
-    reader.onerror = function(err) {
-      statusDiv.textContent = 'Error reading file.';
-      console.error('[popup] FileReader error:', err);
-    };
+      extractedBytes = new TextEncoder().encode(extractedData);
+    } else {
+      extractedBytes = new Uint8Array(evt.target.result);
+      extractedData = '';
+    }
+    statusDiv.textContent = `Loaded file: ${file.name}`;
+    statusDiv.style.color = '#00796b';
+    console.log('[popup] File loaded:', file.name);
+  };
+  reader.onerror = function(err) {
+    showError('Error reading file.', 'Try a different file or check file format.');
+    console.error('[popup] FileReader error:', err);
+  };
+  if (isText) {
     reader.readAsText(file);
+  } else {
+    reader.readAsArrayBuffer(file);
   }
 });
 
 
 extractPageBtn && extractPageBtn.addEventListener('click', () => {
   statusDiv.textContent = 'Extracting page content...';
+  statusDiv.style.color = '#00796b';
   console.log('[popup] Extract Page Content button clicked');
   chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
     const tab = tabs[0];
     if (tab.url && tab.url.startsWith('chrome://')) {
-      statusDiv.textContent = 'Cannot extract content from chrome:// URLs.';
+      showError('Cannot extract content from chrome:// URLs.', 'Switch to a regular web page and try again.');
       console.warn('[popup] Attempted to extract from chrome:// URL:', tab.url);
       return;
     }
@@ -57,8 +89,9 @@ extractPageBtn && extractPageBtn.addEventListener('click', () => {
       if (results && results[0] && results[0].result) {
         extractedData = results[0].result;
         statusDiv.textContent = 'Page content extracted.';
+        statusDiv.style.color = '#00796b';
       } else {
-        statusDiv.textContent = 'Failed to extract page content.';
+        showError('Failed to extract page content.', 'Reload the page or check permissions.');
         console.error('[popup] Failed to extract page content:', results);
       }
     });
@@ -97,11 +130,13 @@ if (googleSignInBtn && authStatus) {
       console.log('[popup] Google sign-in response:', response);
       if (response && response.ok && response.token) {
         googleAuthToken = response.token;
+        chrome.storage.local.set({ googleAuthToken: response.token });
         statusDiv.textContent = 'Google sign-in successful.';
+        statusDiv.style.color = '#00796b';
         authStatus.textContent = 'Google Authenticated';
         authStatus.style.color = '#00796b';
       } else {
-        statusDiv.textContent = 'Google sign-in failed.';
+        showError('Google sign-in failed.', 'Check your Chrome login or try again.');
         authStatus.textContent = 'Google Not Signed In';
         authStatus.style.color = '#c62828';
         console.error('[popup] Google sign-in failed:', response);
@@ -114,8 +149,9 @@ if (googleSignInBtn && authStatus) {
 entryForm.addEventListener('submit', (e) => {
   e.preventDefault();
   console.log('[popup] Generate Codex Entry button clicked');
-  if (!extractedData) {
-    statusDiv.textContent = 'No data to process. Upload a file or extract page content.';
+  const file = fileInput.files[0];
+  if (!extractedBytes || !file) {
+    showError('No data to process.', 'Upload a file or extract page content first.');
     console.warn('[popup] No data to process');
     return;
   }
@@ -125,31 +161,41 @@ entryForm.addEventListener('submit', (e) => {
     // Add more metadata fields as needed
   };
   statusDiv.textContent = 'Generating Codex Entry...';
+  statusDiv.style.color = '#00796b';
   aiSummary.textContent = '';
   certificateSummary.textContent = '';
   chrome.runtime.sendMessage({
     type: 'CREATE_CODEX_FROM_FILE',
     payload: {
-      bytes: Array.from(new TextEncoder().encode(extractedData)),
-      filename: fileInput.files[0] ? fileInput.files[0].name : 'web-content.txt',
+      bytes: Array.from(extractedBytes),
+      filename: file.name,
       anchorType: anchorType ? anchorType.value : 'mock',
       googleAuthToken: googleAuthToken
     }
   }, async (response) => {
     console.log('[popup] Codex entry response:', response);
     if (response && response.ok && response.entry) {
-      jsonResult.textContent += JSON.stringify(response.entry, null, 2);
+      jsonResult.textContent = JSON.stringify(response.entry, null, 2);
       downloadBtn.style.display = 'inline-block';
       copyBtn.style.display = 'inline-block';
-      statusDiv.textContent += 'Codex Entry generated.';
+      statusDiv.textContent += ' Codex Entry generated.';
+      statusDiv.style.color = '#00796b';
       aiSummary.textContent += response.entry.identity.subject || '';
       certificateSummary.textContent += response.entry.certificate_summary || '';
+      // Show payload download link if Drive URL is present
+      const payloadLink = document.getElementById('payloadDownloadLink');
+      if (response.entry.storage && response.entry.storage.location && response.entry.storage.location.startsWith('https://drive.google.com/')) {
+        payloadLink.href = response.entry.storage.location;
+        payloadLink.style.display = 'inline-block';
+      } else {
+        payloadLink.style.display = 'none';
+      }
       // Validate entry against schema
       const validation = await validateCodexEntry(response.entry);
       if (validation.valid) {
         statusDiv.textContent += ' (Schema valid)';
       } else {
-        statusDiv.textContent += ' (Schema INVALID)';
+        showError('Schema INVALID.', 'Check schema errors below.');
         certificateSummary.textContent += '\nSchema errors:\n' + validation.errors.map(e => e.message).join('\n');
         console.error('[popup] Schema validation errors:', validation.errors);
       }
@@ -170,7 +216,7 @@ entryForm.addEventListener('submit', (e) => {
           errorMsg += JSON.stringify(response.details, null, 2) + '\n';
         }
       }
-      statusDiv.textContent += errorMsg;
+      showError(errorMsg, 'Check error details above and try again.');
       console.error('[popup] Failed to generate entry:', JSON.stringify(response, null, 2));
       // Log the entry object for debugging
       if (response && response.entry) {

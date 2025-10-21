@@ -1,5 +1,44 @@
 # Lockb0x Codex Forge — Development Plan
 
+## Comprehensive Improvement Plan (2025-10-20)
+
+### File Upload & Payload Storage
+- Add support for binary file uploads (use readAsArrayBuffer for non-text files)
+- Ensure storage.location always references the actual uploaded payload file
+- Add UI link/button to download the payload from Drive
+- Prevent overwriting payload file when uploading Codex entry
+
+### Error Handling & UI Feedback
+- Improve error messages in the UI for upload/auth failures
+- Display clear instructions for recovery (e.g., re-authenticate, retry upload)
+- Show status and error messages for all user actions
+
+### Google Auth Token Persistence
+- Persist Google auth token in chrome.storage for session reliability
+- Always check token validity before making API calls
+
+### Workflow & Reference Consistency
+- Ensure artifact field and storage.location are consistent and valid
+- Document workflow and expected results for users and testers
+
+### Schema Validation & Export
+- Validate that payload file exists and Drive link is valid before export
+- Display validation results and errors in popup
+
+### Testing & QA
+- Add unit tests for binary file uploads, payload storage, and anchor logic
+- Expand tests for Google anchor integration and edge cases
+- Test end-to-end flows for all anchor types and export scenarios
+
+### Documentation & Contributor Guide
+- Update README and docs with troubleshooting, usage, and contribution guidelines
+- Document Google anchor integration and schema validation flow
+- Add verification instructions and sample scripts for users
+
+### Roadmap Summary
+- Complete all improvements above for robust, user-friendly release
+- Finalize for hackathon/demo/production submission
+
 ## Hackathon Submission Strategy
 - Overhaul documentation (README.md, AGENTS.md, GoogleCloudAnchor.md)
 - Create demo assets (screenshots, GIFs, video walkthrough)
@@ -9,12 +48,9 @@
 - Prepare submission checklist for judges
 
 ## Unified Implementation Checklist
-- [ ] README hackathon overhaul
-- [ ] Add demo assets
-- [ ] User feedback and testing summary
-- [ ] Competitive analysis section
-- [ ] Future roadmap section
-- [ ] Submission checklist
+ [x] File upload & payload storage improvements
+ [ ] Error handling & UI feedback enhancements
+ [x] Google auth token persistence
 
 ## Technical Milestones
 - Complete Google anchor API integration (see GoogleCloudAnchor.md)
@@ -41,6 +77,7 @@ AI Metadata Integration: ✅ Complete
 Google Anchor Integration: 🟡 In Progress (adapter stubbed, UI/auth logic present; UI feedback and error handling improved)
 Schema Validation & Export Polish: ✅ Complete (validation runs before export, feedback shown in popup)
 Unit Testing: ✅ Complete (protocol, AI, and validation modules covered)
+
 Architecture Overview
 Component	File Path(s)	Role/Functionality
 Manifest	manifest.json	Declares service worker, popup, permissions
@@ -50,6 +87,7 @@ AI Integration	ai.js	Chrome AI APIs for summarization, tagging, certificate
 Schema Validation	lib/validate.js, codex-entry.json	Validates entries before export
 Popup UI	popup/popup.html, popup.js	User interface, file/page input, anchor selection, export
 Unit Tests	lib/*.test.js	Jest tests for protocol, AI, validation
+
 Completed Features
 Manifest V3 setup with all required permissions
 Protocol core: UUID, SHA-256, ni-URI, canonicalization, signing
@@ -58,6 +96,7 @@ Chrome AI metadata generation (summarization, process tag, certificate summary)
 Schema validation before export, with feedback in popup
 Robust error handling and UI feedback for all user actions
 Unit tests for protocol, AI, and validation modules
+
 Remaining Development Tasks
 1. Google Anchor Integration (Production)
 Implement real Google anchor API integration in protocol.js (replace stub)

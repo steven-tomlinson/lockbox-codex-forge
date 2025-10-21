@@ -96,22 +96,27 @@ async function uploadFileToGoogleDrive({ bytes, filename, mimeType = 'applicatio
   const boundary = '-------314159265358979323846';
   const delimiter = `\r\n--${boundary}\r\n`;
   const closeDelim = `\r\n--${boundary}--`;
-  const body =
-    delimiter +
-    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-    JSON.stringify(metadata) +
-    delimiter +
-    `Content-Type: ${mimeType}\r\n\r\n` +
-    new TextDecoder().decode(bytes) +
-    closeDelim;
-
+  // Use Blob for binary-safe multipart body
+  const bodyParts = [
+    delimiter,
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n',
+    JSON.stringify(metadata),
+    delimiter,
+    `Content-Type: ${mimeType}\r\n\r\n`,
+    new Blob([bytes], { type: mimeType }),
+    closeDelim
+  ];
+  // Convert to FormData for fetch compatibility
+  const formData = new FormData();
+  formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  formData.append('file', new Blob([bytes], { type: mimeType }));
   const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': `multipart/related; boundary=${boundary}`
+      'Authorization': `Bearer ${token}`
+      // Content-Type will be set automatically by FormData
     },
-    body
+    body: formData
   });
   if (!res.ok) {
     const err = await res.text();
@@ -132,6 +137,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: false, error: errMsg });
       } else {
         googleAuthToken = token;
+        chrome.storage.local.set({ googleAuthToken: token });
         sendResponse({ ok: true, token });
       }
     });
@@ -171,10 +177,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         // Step 1: Upload payload to Google Drive (if Google anchor)
         if (anchorType === 'google' && googleAuthToken) {
           try {
+            // Detect MIME type from filename
+            let mimeType = 'application/octet-stream';
+            if (filename.match(/\.txt$/i)) mimeType = 'text/plain';
+            else if (filename.match(/\.json$/i)) mimeType = 'application/json';
+            else if (filename.match(/\.md$/i)) mimeType = 'text/markdown';
             payloadDriveInfo = await uploadFileToGoogleDrive({
               bytes: fileBytes,
               filename,
-              mimeType: 'application/octet-stream',
+              mimeType,
               token: googleAuthToken
             });
           } catch (err) {
@@ -187,9 +198,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         try {
           hash = await sha256(fileBytes);
           integrity = niSha256(hash);
-          fileText = new TextDecoder().decode(fileBytes);
-          subject = await summarizeContent(fileText);
-          processTag = await generateProcessTag(fileText);
+          // Only decode as text if file is text
+          if (filename.match(/\.(txt|md|json)$/i)) {
+            fileText = new TextDecoder().decode(fileBytes);
+            subject = await summarizeContent(fileText);
+            processTag = await generateProcessTag(fileText);
+          } else {
+            fileText = null;
+            subject = filename;
+            processTag = 'binary-upload';
+          }
         } catch (err) {
           console.error('[background] Pre-anchor error:', err);
           sendResponse({ ok: false, error: 'Pre-anchor error', details: err });
@@ -216,15 +234,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         // Step 4: Build unsigned Codex entry
         const codexId = uuidv4();
         entry = buildUnsignedCodexEntry({
+          // Ensure workflow and reference consistency
           id: codexId,
           payloadDriveId: payloadDriveInfo ? payloadDriveInfo.id : undefined,
           payloadDriveUrl: payloadDriveInfo ? `https://drive.google.com/file/d/${payloadDriveInfo.id}` : filename,
           integrity_proof: integrity,
           org: "Codex Forge",
           process: processTag,
-          artifact: filename,
+          artifact: filename, // Always set artifact to filename
           subject,
-          anchor
+          anchor,
+          protocol: (anchorType === 'google' && payloadDriveInfo) ? 'gdrive' : 'local' // Set protocol for storage
         });
         // Step 5: Sign Codex entry
         await signCodexEntry(entry);
@@ -235,23 +255,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           } catch (err) {
             console.error('[background] Google Drive Codex entry upload error:', err);
             sendResponse({ ok: false, error: 'Google Drive Codex entry upload error', details: err });
-            return;
-          }
-        }
-        // Step 7: Make Codex entry self-referential (if Google anchor)
-        if (anchorType === 'google' && googleAuthToken && codexDriveInfo && codexDriveInfo.id) {
-          try {
-            codexSelfRefInfo = await makeCodexEntrySelfReferential({ entry, codexFileId: codexDriveInfo.id, token: googleAuthToken });
-          } catch (err) {
-            console.error('[background] Google Drive Codex self-referential update error:', err);
-            sendResponse({ ok: false, error: 'Google Drive Codex self-referential update error', details: err });
-            return;
-          }
-        }
-        // Step 8: Validate entry before sending response
-        // Force protocol to 'gcs' for Google anchor
-        if (anchorType === 'google') {
-          entry.storage.protocol = 'gcs';
+            // Ensure workflow and reference consistency in Codex entry
+            return {
+              id,
+              version,
+              storage: {
+                protocol: protocol || "gdrive",
+                location: payloadDriveUrl || `https://drive.google.com/file/d/${payloadDriveId}`,
+                integrity_proof
+              },
+              identity: {
+                org,
+                process,
+                artifact,
+                subject
+              },
+              anchor,
+              signatures: []
+            };
         }
   // Debug: Print protocol value before validation
   console.log('[background] Debug protocol before validation:', entry.storage.protocol);
