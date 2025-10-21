@@ -249,9 +249,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           }
         }
         // Step 8: Validate entry before sending response
-        // Force protocol to 'gdrive' for Google anchor
+        // Force protocol to 'gcs' for Google anchor
         if (anchorType === 'google') {
-          entry.storage.protocol = 'gdrive';
+          entry.storage.protocol = 'gcs';
         }
   // Debug: Print protocol value before validation
   console.log('[background] Debug protocol before validation:', entry.storage.protocol);
