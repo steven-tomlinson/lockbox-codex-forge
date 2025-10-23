@@ -88,6 +88,7 @@ extractPageBtn && extractPageBtn.addEventListener('click', () => {
       console.log('[popup] Scripting results:', results);
       if (results && results[0] && results[0].result) {
         extractedData = results[0].result;
+        extractedBytes = new TextEncoder().encode(extractedData);
         statusDiv.textContent = 'Page content extracted.';
         statusDiv.style.color = '#00796b';
       } else {
@@ -168,7 +169,20 @@ entryForm.addEventListener('submit', (e) => {
     type: 'CREATE_CODEX_FROM_FILE',
     payload: {
       bytes: Array.from(extractedBytes),
-      filename: file.name,
+      filename: file ? file.name : (() => {
+        // Get current tab title and date
+        let pageTitle = '';
+        try {
+          pageTitle = document.title.replace(/[^a-zA-Z0-9_-]/g, '-').substring(0, 40);
+        } catch (e) {
+          pageTitle = 'untitled';
+        }
+        const now = new Date();
+        const y = String(now.getFullYear()).slice(-2);
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `ce-current--${pageTitle}-${y}${m}${d}.txt`;
+      })(),
       anchorType: anchorType ? anchorType.value : 'mock',
       googleAuthToken: googleAuthToken
     }

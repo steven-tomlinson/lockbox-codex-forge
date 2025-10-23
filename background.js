@@ -1,3 +1,6 @@
+import { sha256, niSha256, jcsStringify, signEntryCanonical, anchorMock, anchorGoogle, uuidv4 } from './lib/protocol.js';
+import { summarizeContent, generateProcessTag } from './lib/ai.js';
+import { validateCodexEntry } from './lib/validate.js';
 // Utility: Make Codex entry self-referential, re-sign, and update file on Drive
 async function makeCodexEntrySelfReferential({ entry, codexFileId, token }) {
   // Update storage.location to point to the Codex entry's own Drive file
