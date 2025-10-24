@@ -1,0 +1,14 @@
+{
+  "name": "lockbox-codex-forge",
+  "version": "1.0.0",
+  "description": "Lockb0x Codex Forge Chrome Extension",
+  "main": "background.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "jsdom": "^27.0.1",
+    "vitest": "^4.0.3"
+  }
+}
