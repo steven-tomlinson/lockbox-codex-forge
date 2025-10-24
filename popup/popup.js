@@ -9,6 +9,10 @@ function showError(message, recovery) {
 }
 import { uuidv4, sha256, niSha256, jcsStringify, signEntryCanonical, anchorMock, anchorGoogle } from '../lib/protocol.js';
 import { validateCodexEntry } from '../lib/validate.js';
+import { updateCodexUI, showError, validateCodexEntry } from '../lib/codex-ui-utils.js';
+import { refreshGoogleAuthToken, getGoogleAuthToken } from '../lib/google-auth-utils.js';
+import { readFileAsBytes, extractFileMetadata } from '../lib/file-utils.js';
+
 // popup.js - Handles popup UI logic for Lockb0x Protocol Codex Forge
 
 const fileInput = document.getElementById('fileInput');
@@ -100,50 +104,12 @@ extractPageBtn && extractPageBtn.addEventListener('click', () => {
 });
 
 
-// Show/hide Google sign-in button based on anchor type
 
+// Show/hide Google sign-in button based on anchor type
 const authStatus = document.getElementById('authStatus');
 if (anchorType && googleSignInBtn && authStatus) {
-  anchorType.addEventListener('change', () => {
-    console.log('[popup] Anchor type changed:', anchorType.value);
-    if (anchorType.value === 'google') {
-      googleSignInBtn.style.display = 'inline-block';
-      authStatus.textContent = googleAuthToken ? 'Google Authenticated' : 'Google Not Signed In';
-      authStatus.style.color = googleAuthToken ? '#00796b' : '#c62828';
-    } else {
-      googleSignInBtn.style.display = 'none';
-      googleAuthToken = null;
-      authStatus.textContent = 'Using Mock Anchor';
-      authStatus.style.color = '#616161';
-    }
-  });
-  // Initialize status
-  anchorType.dispatchEvent(new Event('change'));
-}
-
-// Handle Google sign-in
-
-if (googleSignInBtn && authStatus) {
-  googleSignInBtn.addEventListener('click', () => {
-    statusDiv.textContent = 'Signing in to Google...';
-    console.log('[popup] Google sign-in button clicked');
-    chrome.runtime.sendMessage({ type: 'GOOGLE_AUTH_REQUEST' }, (response) => {
-      console.log('[popup] Google sign-in response:', response);
-      if (response && response.ok && response.token) {
-        googleAuthToken = response.token;
-        chrome.storage.local.set({ googleAuthToken: response.token });
-        statusDiv.textContent = 'Google sign-in successful.';
-        statusDiv.style.color = '#00796b';
-        authStatus.textContent = 'Google Authenticated';
-        authStatus.style.color = '#00796b';
-      } else {
-        showError('Google sign-in failed.', 'Check your Chrome login or try again.');
-        authStatus.textContent = 'Google Not Signed In';
-        authStatus.style.color = '#c62828';
-        console.error('[popup] Google sign-in failed:', response);
-      }
-    });
-  });
+  authStatus.textContent = 'Google Authenticated';
+  authStatus.style.color = '#00796b';
 }
 
 
@@ -222,44 +188,23 @@ entryForm.addEventListener('submit', (e) => {
     } else {
       let errorMsg = '';
       errorMsg += 'Failed to generate entry.\n';
-      errorMsg += 'Full response object:\n' + JSON.stringify(response, null, 2) + '\n';
-      if (response && response.error) {
-        errorMsg += 'Error:\n';
-        errorMsg += JSON.stringify(response.error, null, 2) + '\n';
-      }
-      // Always show the error array, even if empty or undefined
-      if (response && 'details' in response) {
+    updateCodexUI.downloadEntry(jsonResult.textContent);
         errorMsg += 'Schema errors:\n';
         if (Array.isArray(response.details) && response.details.length > 0) {
           errorMsg += response.details.map(e => e.message).join('\n') + '\n';
-        } else {
-          errorMsg += JSON.stringify(response.details, null, 2) + '\n';
+    updateCodexUI.copyEntry(jsonResult.textContent, statusDiv);
         }
       }
       showError(errorMsg, 'Check error details above and try again.');
-      console.error('[popup] Failed to generate entry:', JSON.stringify(response, null, 2));
-      // Log the entry object for debugging
-      if (response && response.entry) {
-        console.log('[popup] Entry object:', response.entry);
-      }
-    }
-  }
-
-  function updateCodexUI(response, payloadExists, payloadValidationMsg) {
-    jsonResult.textContent = JSON.stringify(response.entry, null, 2);
-    downloadBtn.style.display = payloadExists ? 'inline-block' : 'none';
-    copyBtn.style.display = 'inline-block';
-    statusDiv.textContent += ' Codex Entry generated.';
-    statusDiv.style.color = payloadExists ? '#00796b' : '#c62828';
-    aiSummary.textContent += response.entry.identity.subject || '';
-    certificateSummary.textContent += response.entry.certificate_summary || '';
-    // Show payload download link if Drive URL is present and exists
+    refreshGoogleAuthToken(googleAuthToken, statusDiv, (newToken) => {
+      googleAuthToken = newToken;
+    });
     const payloadLink = document.getElementById('payloadDownloadLink');
     if (response.entry.storage && response.entry.storage.location && response.entry.storage.location.startsWith('https://drive.google.com/') && payloadExists) {
       payloadLink.href = response.entry.storage.location;
-      payloadLink.style.display = 'inline-block';
-    } else {
-      payloadLink.style.display = 'none';
+    getGoogleAuthToken((token) => {
+      if (token) googleAuthToken = token;
+    });
     }
     // Validate entry against schema
     (async () => {
@@ -284,6 +229,21 @@ entryForm.addEventListener('submit', (e) => {
       let sentChunks = 0;
       let totalChunks = Math.ceil(bytes.length / CHUNK_SIZE);
       statusDiv.textContent = `Uploading large file in ${totalChunks} chunks...`;
+      // Progress bar setup
+      let progressBar = document.getElementById('uploadProgressBar');
+      if (!progressBar) {
+        progressBar = document.createElement('progress');
+        progressBar.id = 'uploadProgressBar';
+        progressBar.max = totalChunks;
+        progressBar.value = 0;
+        statusDiv.parentNode.insertBefore(progressBar, statusDiv.nextSibling);
+      } else {
+        progressBar.max = totalChunks;
+        progressBar.value = 0;
+        progressBar.style.display = 'block';
+      }
+      // Disable form during upload
+      entryForm.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
       // Send metadata first
       port.postMessage({
         type: 'START_LARGE_FILE_UPLOAD',
@@ -301,11 +261,38 @@ entryForm.addEventListener('submit', (e) => {
           chunk: Array.from(chunk)
         });
         sentChunks++;
-        statusDiv.textContent = `Uploading chunk ${sentChunks} of ${totalChunks}...`;
       }
       // Signal completion
       port.postMessage({ type: 'END_LARGE_FILE_UPLOAD' });
-      port.onMessage.addListener(handleCodexResponse);
+      port.onMessage.addListener((msg) => {
+        if (msg.status === 'started') {
+          statusDiv.textContent = 'Upload started...';
+        } else if (msg.status === 'chunk-received') {
+          statusDiv.textContent = `Chunk ${msg.chunkIndex + 1} of ${totalChunks} uploaded...`;
+          progressBar.value = msg.chunkIndex + 1;
+          if (msg.chunkIndex + 1 === totalChunks) {
+            statusDiv.textContent = 'All chunks uploaded. Processing file...';
+            progressBar.value = totalChunks;
+          }
+        } else if (msg.status === 'processing') {
+          statusDiv.textContent = 'Processing file and computing hash...';
+        } else if (msg.status === 'drive-upload') {
+          statusDiv.textContent = 'Uploading payload to Google Drive...';
+        } else if (msg.status === 'codex-generation') {
+          statusDiv.textContent = 'Generating Codex entry...';
+        } else if (msg.ok === false) {
+          showError(`Error: ${msg.error}`, 'Check error details above and try again.');
+          progressBar.style.display = 'none';
+          entryForm.querySelectorAll('input, button, select').forEach(el => el.disabled = false);
+        } else if (msg.ok === true) {
+          statusDiv.textContent = 'Codex entry generated!';
+          progressBar.style.display = 'none';
+          entryForm.querySelectorAll('input, button, select').forEach(el => el.disabled = false);
+          jsonResult.textContent = JSON.stringify(msg.entry, null, 2);
+          // Show download/copy buttons, display entry, etc.
+          updateCodexUI(msg, true, 'Payload exists on Google Drive.');
+        }
+      });
     });
   } else {
     // Use existing sendMessage workflow for small files
