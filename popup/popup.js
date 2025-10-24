@@ -165,82 +165,60 @@ entryForm.addEventListener('submit', (e) => {
   statusDiv.style.color = '#00796b';
   aiSummary.textContent = '';
   certificateSummary.textContent = '';
-  chrome.runtime.sendMessage({
-    type: 'CREATE_CODEX_FROM_FILE',
-    payload: {
-      bytes: Array.from(extractedBytes),
-      filename: file ? file.name : (() => {
-        // Get current tab title and date
-        let pageTitle = '';
-        try {
-          pageTitle = document.title.replace(/[^a-zA-Z0-9_-]/g, '-').substring(0, 40);
-        } catch (e) {
-          pageTitle = 'untitled';
-        }
-        const now = new Date();
-        const y = String(now.getFullYear()).slice(-2);
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const d = String(now.getDate()).padStart(2, '0');
-        return `ce-current--${pageTitle}-${y}${m}${d}.txt`;
-      })(),
-      anchorType: anchorType ? anchorType.value : 'mock',
-      googleAuthToken: googleAuthToken
+
+  // --- Large file support ---
+  const CHUNK_SIZE = 1024 * 1024; // 1MB
+  const LARGE_FILE_THRESHOLD = 3 * 1024 * 1024; // 3MB
+  const bytes = extractedBytes ? extractedBytes : new Uint8Array();
+  const isLargeFile = bytes && bytes.length > LARGE_FILE_THRESHOLD;
+  const filename = file ? file.name : (() => {
+    let pageTitle = '';
+    try {
+      pageTitle = document.title.replace(/[^a-zA-Z0-9_-]/g, '-').substring(0, 40);
+    } catch (e) {
+      pageTitle = 'untitled';
     }
-  }, async (response) => {
+    const now = new Date();
+    const y = String(now.getFullYear()).slice(-2);
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `ce-current--${pageTitle}-${y}${m}${d}.txt`;
+  })();
+
+  function handleCodexResponse(response) {
     console.log('[popup] Codex entry response:', response);
     if (response && response.ok && response.entry) {
       // If Google Drive payload, validate existence before export
       let payloadExists = true;
       let payloadValidationMsg = '';
       if (response.entry.storage && response.entry.storage.protocol === 'gdrive' && response.payloadDriveInfo && response.payloadDriveInfo.id && googleAuthToken) {
-        try {
-          const validatePayload = await new Promise((resolve) => {
-            chrome.runtime.sendMessage({
-              type: 'VALIDATE_PAYLOAD_EXISTENCE',
-              payload: {
-                fileId: response.payloadDriveInfo.id,
-                token: googleAuthToken
-              }
-            }, resolve);
-          });
-          if (validatePayload && validatePayload.ok && validatePayload.exists) {
-            payloadExists = true;
-            payloadValidationMsg = 'Payload exists on Google Drive.';
-          } else {
+        (async () => {
+          try {
+            const validatePayload = await new Promise((resolve) => {
+              chrome.runtime.sendMessage({
+                type: 'VALIDATE_PAYLOAD_EXISTENCE',
+                payload: {
+                  fileId: response.payloadDriveInfo.id,
+                  token: googleAuthToken
+                }
+              }, resolve);
+            });
+            if (validatePayload && validatePayload.ok && validatePayload.exists) {
+              payloadExists = true;
+              payloadValidationMsg = 'Payload exists on Google Drive.';
+            } else {
+              payloadExists = false;
+              payloadValidationMsg = 'Payload NOT found on Google Drive.';
+            }
+          } catch (err) {
             payloadExists = false;
-            payloadValidationMsg = 'Payload NOT found on Google Drive.';
+            payloadValidationMsg = 'Error validating payload existence.';
           }
-        } catch (err) {
-          payloadExists = false;
-          payloadValidationMsg = 'Error validating payload existence.';
-        }
-      }
-      jsonResult.textContent = JSON.stringify(response.entry, null, 2);
-      downloadBtn.style.display = payloadExists ? 'inline-block' : 'none';
-      copyBtn.style.display = 'inline-block';
-      statusDiv.textContent += ' Codex Entry generated.';
-      statusDiv.style.color = payloadExists ? '#00796b' : '#c62828';
-      aiSummary.textContent += response.entry.identity.subject || '';
-      certificateSummary.textContent += response.entry.certificate_summary || '';
-      // Show payload download link if Drive URL is present and exists
-      const payloadLink = document.getElementById('payloadDownloadLink');
-      if (response.entry.storage && response.entry.storage.location && response.entry.storage.location.startsWith('https://drive.google.com/') && payloadExists) {
-        payloadLink.href = response.entry.storage.location;
-        payloadLink.style.display = 'inline-block';
+          updateCodexUI(response, payloadExists, payloadValidationMsg);
+        })();
       } else {
-        payloadLink.style.display = 'none';
+        updateCodexUI(response, payloadExists, payloadValidationMsg);
       }
-      // Validate entry against schema
-      const validation = await validateCodexEntry(response.entry);
-      if (validation.valid) {
-        statusDiv.textContent += ' (Schema valid)';
-      } else {
-        showError('Schema INVALID.', 'Check schema errors below.');
-        certificateSummary.textContent += '\nSchema errors:\n' + validation.errors.map(e => e.message).join('\n');
-        console.error('[popup] Schema validation errors:', validation.errors);
-      }
-      // Show payload existence validation result
-      statusDiv.textContent += `\n${payloadValidationMsg}`;
     } else {
       let errorMsg = '';
       errorMsg += 'Failed to generate entry.\n';
@@ -265,7 +243,82 @@ entryForm.addEventListener('submit', (e) => {
         console.log('[popup] Entry object:', response.entry);
       }
     }
-  });
+  }
+
+  function updateCodexUI(response, payloadExists, payloadValidationMsg) {
+    jsonResult.textContent = JSON.stringify(response.entry, null, 2);
+    downloadBtn.style.display = payloadExists ? 'inline-block' : 'none';
+    copyBtn.style.display = 'inline-block';
+    statusDiv.textContent += ' Codex Entry generated.';
+    statusDiv.style.color = payloadExists ? '#00796b' : '#c62828';
+    aiSummary.textContent += response.entry.identity.subject || '';
+    certificateSummary.textContent += response.entry.certificate_summary || '';
+    // Show payload download link if Drive URL is present and exists
+    const payloadLink = document.getElementById('payloadDownloadLink');
+    if (response.entry.storage && response.entry.storage.location && response.entry.storage.location.startsWith('https://drive.google.com/') && payloadExists) {
+      payloadLink.href = response.entry.storage.location;
+      payloadLink.style.display = 'inline-block';
+    } else {
+      payloadLink.style.display = 'none';
+    }
+    // Validate entry against schema
+    (async () => {
+      const validation = await validateCodexEntry(response.entry);
+      if (validation.valid) {
+        statusDiv.textContent += ' (Schema valid)';
+      } else {
+        showError('Schema INVALID.', 'Check schema errors below.');
+        certificateSummary.textContent += '\nSchema errors:\n' + validation.errors.map(e => e.message).join('\n');
+        console.error('[popup] Schema validation errors:', validation.errors);
+      }
+      // Show payload existence validation result
+      statusDiv.textContent += `\n${payloadValidationMsg}`;
+    })();
+  }
+
+  if (isLargeFile) {
+    // Wake up service worker before Port connection
+    chrome.runtime.sendMessage({ type: 'PING' }, () => {
+      // Use Port-based chunked transfer
+      const port = chrome.runtime.connect();
+      let sentChunks = 0;
+      let totalChunks = Math.ceil(bytes.length / CHUNK_SIZE);
+      statusDiv.textContent = `Uploading large file in ${totalChunks} chunks...`;
+      // Send metadata first
+      port.postMessage({
+        type: 'START_LARGE_FILE_UPLOAD',
+        filename,
+        anchorType: anchorType ? anchorType.value : 'mock',
+        googleAuthToken: googleAuthToken,
+        totalChunks
+      });
+      // Send chunks
+      for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+        const chunk = bytes.slice(i, i + CHUNK_SIZE);
+        port.postMessage({
+          type: 'LARGE_FILE_CHUNK',
+          chunkIndex: sentChunks,
+          chunk: Array.from(chunk)
+        });
+        sentChunks++;
+        statusDiv.textContent = `Uploading chunk ${sentChunks} of ${totalChunks}...`;
+      }
+      // Signal completion
+      port.postMessage({ type: 'END_LARGE_FILE_UPLOAD' });
+      port.onMessage.addListener(handleCodexResponse);
+    });
+  } else {
+    // Use existing sendMessage workflow for small files
+    chrome.runtime.sendMessage({
+      type: 'CREATE_CODEX_FROM_FILE',
+      payload: {
+        bytes: Array.from(bytes),
+        filename,
+        anchorType: anchorType ? anchorType.value : 'mock',
+        googleAuthToken: googleAuthToken
+      }
+    }, handleCodexResponse);
+  }
 });
 
 downloadBtn.addEventListener('click', () => {
