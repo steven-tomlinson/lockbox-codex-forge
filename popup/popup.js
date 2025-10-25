@@ -205,28 +205,62 @@ extractPageBtn && extractPageBtn.addEventListener('click', () => {
       console.warn('[popup] Attempted to extract from chrome:// URL:', tab.url);
       return;
     }
+    // Get page text and meta description
     chrome.scripting.executeScript({
       target: {tabId: tab.id},
-      func: () => document.body.innerText
+      func: () => {
+        const text = document.body.innerText;
+        let metaDesc = '';
+        const meta = document.querySelector('meta[name="description"]');
+        if (meta && meta.content) metaDesc = meta.content;
+        return { text, metaDesc };
+      }
     }, async (results) => {
       console.log('[popup] Scripting results:', results);
       if (results && results[0] && results[0].result) {
-        extractedData = results[0].result;
+        extractedData = results[0].result.text;
         extractedBytes = new TextEncoder().encode(extractedData);
-        // Use Summarizer API for summary
+        let summary = '';
+        let screenshotUrl = '';
+        // Try Summarizer API
         try {
-          const summary = await summarizeText(extractedData);
-          aiSummary.textContent = summary;
-          aiSummary.style.display = 'block';
-          statusDiv.textContent = 'Page content extracted and summarized.';
-          statusDiv.style.color = '#00796b';
+          summary = await summarizeText(extractedData);
         } catch (err) {
-          aiSummary.textContent = '';
-          aiSummary.style.display = 'none';
-          statusDiv.textContent = 'Page content extracted, but summarization failed.';
-          statusDiv.style.color = '#c62828';
-          console.error('[popup] Summarizer API error:', err);
+          // Fallback: use meta description or first 100 chars
+          if (results[0].result.metaDesc) {
+            summary = results[0].result.metaDesc;
+          } else {
+            summary = extractedData.slice(0, 100);
+          }
+          // Try to capture screenshot
+          try {
+            screenshotUrl = await new Promise((resolve, reject) => {
+              chrome.tabs.captureVisibleTab(tab.windowId, {format: 'png'}, (dataUrl) => {
+                if (chrome.runtime.lastError || !dataUrl) reject(chrome.runtime.lastError);
+                else resolve(dataUrl);
+              });
+            });
+          } catch (e) {
+            screenshotUrl = '';
+          }
         }
+        aiSummary.textContent = summary;
+        aiSummary.style.display = 'block';
+        if (screenshotUrl) {
+          // Show screenshot below summary
+          let img = document.getElementById('pageScreenshot');
+          if (!img) {
+            img = document.createElement('img');
+            img.id = 'pageScreenshot';
+            img.style.maxWidth = '100%';
+            img.style.marginTop = '8px';
+            aiSummary.parentNode.insertBefore(img, aiSummary.nextSibling);
+          }
+          img.src = screenshotUrl;
+          img.style.display = 'block';
+        }
+        statusDiv.textContent = screenshotUrl ? 'Page content extracted (fallback: screenshot and summary).' : 'Page content extracted and summarized.';
+        statusDiv.style.color = '#00796b';
       } else {
         showError('Failed to extract page content.', 'Reload the page or check permissions.');
         console.error('[popup] Failed to extract page content:', results);
