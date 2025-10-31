@@ -1,7 +1,7 @@
 import { sha256, niSha256, anchorMock, anchorGoogle, uuidv4 } from './lib/protocol.js';
 import { summarizeContent, generateProcessTag } from './lib/ai.js';
 import { validateCodexEntry } from './lib/validate.js';
-import { signCodexEntry, buildUnsignedCodexEntry, makeCodexEntrySelfReferential } from './lib/codex-utils.js';
+import { signCodexEntry, buildUnsignedCodexEntry } from './lib/codex-utils.js';
 import { uploadFileToGoogleDrive, uploadCodexEntryToGoogleDrive, checkDriveFileExists } from './lib/drive-utils.js';
 // Google OAuth token storage
 let googleAuthToken = null;
