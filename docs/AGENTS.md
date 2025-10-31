@@ -1,10 +1,12 @@
 # AGENTS.md — Code Review & Action Plan for Lockb0x Codex Forge
 
 ## Status Summary (as of 2025-10-24)
+
 - See [README.md](../README.md) for current features, troubleshooting, and user guidance.
 - See [DEVELOPMENT-PLAN.md](./DEVELOPMENT-PLAN.md) for architecture, phased breakdown, and build status.
 
 ### Progress
+
 - Core protocol, AI metadata, and Google anchor integration are complete and working.
 - Binary file upload and robust payload storage (Google Drive) are implemented and validated.
 - Codex entry generation, schema validation, and export polish are fully functional in the popup UI.
@@ -13,6 +15,7 @@
 - Unit testing for protocol, AI, validation, anchor logic, and payload existence is in place.
 
 ### Next Actions
+
 - UI/UX polish: improve layout, accessibility, and feedback clarity
 - Error handling: refine messages and recovery instructions for all user actions
 - Documentation: expand contributor guides, troubleshooting, and verification instructions
@@ -22,6 +25,7 @@
 ---
 
 ## Team Roles & Assignments (2025-10-24)
+
 - **Project Lead:** Oversees development, documentation, roadmap, and hackathon strategy
 - **AI Integration:** Implements and tests Chrome AI APIs, metadata generation, and fallback logic
 - **Protocol Engineer:** Develops and tests Lockb0x protocol logic, anchor flows, and schema validation
@@ -31,6 +35,7 @@
 - **Documentation:** Updates README, contributor guides, troubleshooting, and verification instructions
 
 ## Hackathon Deliverable Assignments
+
 - File upload & payload storage: Protocol Engineer, UI/UX Designer
 - Error handling & UI feedback: UI/UX Designer, QA & Testing
 - Google auth token persistence: Google Cloud Integration
@@ -48,4 +53,5 @@
 - Error handling enhancements: Protocol Engineer, UI/UX Designer, QA & Testing
 
 ## Progress Tracking
+
 See DEVELOPMENT-PLAN.md for unified checklist and milestone status. Update roles and assignments as needed for hackathon readiness and future releases.
