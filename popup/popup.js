@@ -370,8 +370,10 @@ entryForm.addEventListener('submit', (e) => {
   if (isLargeFile) {
     // Wake up service worker before Port connection
     chrome.runtime.sendMessage({ type: 'PING' }, function(response) {
-      if (chrome.runtime.lastError) {
-        console.warn('[popup] PING lastError:', chrome.runtime.lastError.message);
+        if (chrome.runtime.lastError) {
+          // Silently log for diagnostics; no user impact if upload proceeds
+          console.warn('[popup] PING lastError (safe to ignore if upload succeeds):', chrome.runtime.lastError.message);
+          // Do not update UI or interrupt workflow
       }
       // Use Port-based chunked transfer
       const port = chrome.runtime.connect();
