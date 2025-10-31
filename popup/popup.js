@@ -124,10 +124,14 @@ function showError(message, recovery) {
       statusDiv.textContent = payloadValidationMsg;
       statusDiv.style.color = payloadExists ? '#00796b' : '#c62828';
     }
-    // Show success message
+    // Show success message and update button visibility
     if (response && response.ok && response.entry && statusDiv) {
       statusDiv.textContent = 'Codex entry generated successfully.' + (payloadValidationMsg ? ('\n' + payloadValidationMsg) : '');
       statusDiv.style.color = '#00796b';
+      // Hide generate button, show download/copy buttons
+      if (generateBtn) generateBtn.style.display = 'none';
+      if (downloadBtn) downloadBtn.style.display = 'inline-block';
+      if (copyBtn) copyBtn.style.display = 'inline-block';
     }
   }
 import { uuidv4, sha256, niSha256, jcsStringify, signEntryCanonical, anchorMock, anchorGoogle } from '../lib/protocol.js';
@@ -436,44 +440,13 @@ entryForm.addEventListener('submit', async (e) => {
     });
   }
   const isLargeFile = bytes && bytes.length > LARGE_FILE_THRESHOLD;
-
-  function handleCodexResponse(response) {
-  // Robust error handling: always update UI for both success and error cases
-  // - If response.ok and response.entry, update UI with entry details
-  // - If error or schema validation fails, show error details and recovery instructions
-    console.log('[popup] Codex entry response:', response);
-    if (response && response.ok && response.entry) {
-      // If Google Drive payload, validate existence before export
-      let payloadExists = true;
-      let payloadValidationMsg = '';
-      const domRefs = { statusDiv, jsonResult, downloadBtn, copyBtn, aiSummary, certificateSummary };
-      if (response.entry.storage && response.entry.storage.protocol === 'gdrive' && response.payloadDriveInfo && response.payloadDriveInfo.id && googleAuthToken) {
-        (async () => {
-          try {
-            const validatePayload = await new Promise((resolve) => {
-              chrome.runtime.sendMessage({
-                type: 'VALIDATE_PAYLOAD_EXISTENCE',
-                payload: {
-                  fileId: response.payloadDriveInfo.id,
-                  token: googleAuthToken
-                }
-              }, resolve);
-            });
-            if (validatePayload && validatePayload.ok && validatePayload.exists) {
-              payloadExists = true;
-              payloadValidationMsg = 'Payload exists on Google Drive.';
-            } else {
-              payloadExists = false;
-              payloadValidationMsg = 'Payload NOT found on Google Drive.';
-            }
-          } catch (err) {
-            payloadExists = false;
-            payloadValidationMsg = 'Error validating payload existence.';
-          }
-          updateCodexUI(domRefs, response, payloadExists, payloadValidationMsg);
-        })();
-      } else {
-        updateCodexUI(domRefs, response, payloadExists, payloadValidationMsg);
+  if (isLargeFile) {
+    // Wake up service worker before Port connection
+    chrome.runtime.sendMessage({ type: 'PING' }, function(response) {
+      if (chrome.runtime.lastError) {
+        // Silently log for diagnostics; no user impact if upload proceeds
+        console.warn('[popup] PING lastError (safe to ignore if upload succeeds):', chrome.runtime.lastError.message);
+        // Do not update UI or interrupt workflow
       }
       // Use Port-based chunked transfer
       const port = chrome.runtime.connect();
@@ -502,7 +475,7 @@ entryForm.addEventListener('submit', async (e) => {
         statusDiv.textContent = `Uploading chunk ${sentChunks} of ${totalChunks}...`;
       }
       // Signal completion
-  port.postMessage({ type: 'END_LARGE_FILE_UPLOAD' });
+      port.postMessage({ type: 'END_LARGE_FILE_UPLOAD' });
       port.onMessage.addListener(function(msg) {
         handleCodexResponse(msg);
       });
@@ -570,3 +543,4 @@ function initializeAuthUI() {
 
 // Remove automatic token request on load
 initializeAuthUI();
+
