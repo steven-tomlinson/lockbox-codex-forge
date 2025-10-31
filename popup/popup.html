@@ -11,7 +11,8 @@
   <h1>Lockb0x Codex Forge</h1>
   <form id="entryForm">
     <label for="fileInput">Upload File:</label>
-    <input type="file" id="fileInput" accept=".txt,.json,.md,.pdf">
+    <input type="file" id="fileInput" accept=".txt,.json,.md,.pdf,.png,.jpg,.jpeg,.docx,
+    .xlsx,.pptx,.mp4,.mp3,.zip,.rar,.tar,.gz,.html,.csv,.epub">
     <br><br>
     <button type="button" id="extractPageBtn">Extract Page Content</button>
     <br><br>
@@ -26,14 +27,9 @@
     <button type="submit" id="generateBtn">Generate Codex Entry</button>
   </form>
   <div id="resultArea">
-    <h2>Result</h2>
-    <div id="aiSummary"></div>
-    <pre id="jsonResult"></pre>
-    <div id="certificateSummary"></div>
-    <button id="downloadBtn">Download Entry</button>
-    <button id="copyBtn">Copy to Clipboard</button>
-    <a id="payloadDownloadLink" href="#" target="_blank" style="display:none; margin-left:10px;">Download Payload from Drive</a>
-  </div>
+    
+  <div id="status" aria-live="polite"></div>
+  <div id="loading">Generating entry…</div>
   <div id="statusStepper" class="status-stepper">
     <div class="step" id="step-upload">1. Upload <span class="step-status"></span></div>
     <div class="step" id="step-hash">2. Hash <span class="step-status"></span></div>
@@ -43,9 +39,16 @@
     <div class="step" id="step-upload-codex">6. Upload Codex <span class="step-status"></span></div>
     <div class="step" id="step-success">7. Success <span class="step-status"></span></div>
   <div class="step" id="step-error">Error <span class="step-status"></span></div>
+  <h2>Result</h2>
+  <div id="aiSummary"></div>
+  <pre id="jsonResult"></pre>
+  <div id="certificateSummary"></div>
+  <button id="downloadBtn">Download Entry</button>
+  <button id="copyBtn">Copy to Clipboard</button>
+  <a id="payloadDownloadLink" href="#" target="_blank" style="display:none; margin-left:10px;">Download Payload from
+    Drive</a>
   </div>
-  <div id="loading">Generating entry…</div>
-  <div id="status" aria-live="polite"></div>
-  <script type="module" src="popup.js"></script>
+</div>
+<script type="module" src="popup.js"></script>
 </body>
 </html>
