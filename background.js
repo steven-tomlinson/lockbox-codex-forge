@@ -121,6 +121,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           artifact: filename,
           subject,
           anchor,
+          createdBy: msg.payload.createdBy,
           protocol: (anchorType === 'google' && payloadDriveInfo) ? 'gdrive' : 'local'
         });
         await signCodexEntry(entry);
@@ -249,6 +250,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             artifact: metadata.filename,
             subject,
             anchor,
+            createdBy: metadata.createdBy,
             protocol: (metadata.anchorType === 'google' && payloadDriveInfo) ? 'gdrive' : 'local'
           });
           await signCodexEntry(entry);

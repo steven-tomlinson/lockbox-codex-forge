@@ -313,14 +313,17 @@ if (anchorType && googleSignInBtn && authStatus) {
 // Handle Google sign-in
 
 if (googleSignInBtn && authStatus) {
-  googleSignInBtn.addEventListener('click', () => {
+  googleSignInBtn.addEventListener('click', async () => {
     statusDiv.textContent = 'Signing in to Google...';
     console.log('[popup] Google sign-in button clicked');
-    chrome.runtime.sendMessage({ type: 'GOOGLE_AUTH_REQUEST' }, (response) => {
+    chrome.runtime.sendMessage({ type: 'GOOGLE_AUTH_REQUEST' }, async (response) => {
       console.log('[popup] Google sign-in response:', response);
       if (response && response.ok && response.token) {
         googleAuthToken = response.token;
         chrome.storage.local.set({ googleAuthToken: response.token });
+        // Fetch and store user profile
+        const { fetchGoogleUserProfile } = await import('../lib/google-auth-utils.js');
+        await fetchGoogleUserProfile(response.token);
         statusDiv.textContent = 'Google sign-in successful.';
         statusDiv.style.color = '#00796b';
         updateAuthUI();
@@ -353,7 +356,7 @@ if (googleLogOutBtn && authStatus) {
 }
 
 
-entryForm.addEventListener('submit', (e) => {
+entryForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   // Block if Google Anchor is selected and not signed in
   if (anchorType && anchorType.value === 'google' && !googleAuthToken) {
@@ -366,6 +369,30 @@ entryForm.addEventListener('submit', (e) => {
   const LARGE_FILE_THRESHOLD = 3 * 1024 * 1024; // 3MB
   const bytes = extractedBytes ? extractedBytes : (file ? new Uint8Array() : null);
   const filename = file ? file.name : 'extracted.txt';
+  // Guard against empty input
+  if (!bytes || bytes.length === 0) {
+    showError('No file or extracted content available.', 'Please select a file or extract page content before generating a Codex entry.');
+    return;
+  }
+  // Get createdBy info
+  let createdBy = { type: 'mock' };
+  if (anchorType && anchorType.value === 'google' && googleAuthToken) {
+    // Try to get user profile from chrome.storage.local
+    createdBy = await new Promise((resolve) => {
+      chrome.storage.local.get(['googleUserProfile'], (result) => {
+        if (result && result.googleUserProfile) {
+          resolve({
+            type: 'google',
+            email: result.googleUserProfile.email,
+            name: result.googleUserProfile.name,
+            picture: result.googleUserProfile.picture
+          });
+        } else {
+          resolve({ type: 'google', email: 'unknown' });
+        }
+      });
+    });
+  }
   const isLargeFile = bytes && bytes.length > LARGE_FILE_THRESHOLD;
   if (isLargeFile) {
     // Wake up service worker before Port connection
@@ -387,7 +414,8 @@ entryForm.addEventListener('submit', (e) => {
         filename,
         anchorType: anchorType ? anchorType.value : 'mock',
         googleAuthToken: googleAuthToken,
-        totalChunks
+        totalChunks,
+        createdBy
       });
       // Send chunks
       for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
@@ -401,7 +429,7 @@ entryForm.addEventListener('submit', (e) => {
         statusDiv.textContent = `Uploading chunk ${sentChunks} of ${totalChunks}...`;
       }
       // Signal completion
-      port.postMessage({ type: 'END_LARGE_FILE_UPLOAD' });
+  port.postMessage({ type: 'END_LARGE_FILE_UPLOAD' });
       port.onMessage.addListener(function(msg) {
         handleCodexResponse(msg);
       });
@@ -414,7 +442,8 @@ entryForm.addEventListener('submit', (e) => {
         bytes: Array.from(bytes),
         filename,
         anchorType: anchorType ? anchorType.value : 'mock',
-        googleAuthToken: googleAuthToken
+        googleAuthToken: googleAuthToken,
+        createdBy
       }
     }, function(response) {
       if (chrome.runtime.lastError) {
