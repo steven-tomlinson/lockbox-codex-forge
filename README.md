@@ -39,8 +39,10 @@ Lockb0x Codex Forge is a Chrome Extension (Manifest V3) for creating secure, ver
   - No integration with experimental Chrome AI APIs
   - Metadata generation uses simple text truncation instead of AI summarization
   - Process tags and certificate summaries use static fallbacks
-- **Testing Infrastructure:** Test files exist but no test runner configured in package.json
-- **Linting:** Multiple unused variable warnings need cleanup
+- **Testing Infrastructure:** Test files exist, test script added to package.json, but vitest needs to be installed
+  - To enable testing: `npm install --save-dev vitest jsdom`
+  - Then run: `npm test`
+- **Code Quality:** All linting warnings have been fixed
 
 ### Proof of Concept Status
 The extension successfully demonstrates:

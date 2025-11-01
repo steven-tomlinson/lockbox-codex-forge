@@ -46,7 +46,7 @@ function handleCodexResponse(response) {
             payloadExists = false;
             payloadValidationMsg = "Payload NOT found on Google Drive.";
           }
-        } catch (err) {
+        } catch (_err) {
           payloadExists = false;
           payloadValidationMsg = "Error validating payload existence.";
         }
@@ -158,16 +158,6 @@ function updateCodexUI(response, payloadExists, payloadValidationMsg) {
     if (copyBtn) copyBtn.style.display = "inline-block";
   }
 }
-import {
-  uuidv4,
-  sha256,
-  niSha256,
-  jcsStringify,
-  signEntryCanonical,
-  anchorMock,
-  anchorGoogle,
-} from "../lib/protocol.js";
-import { validateCodexEntry } from "../lib/validate.js";
 import { summarizeText } from "../lib/ai.js";
 // popup.js - Handles popup UI logic for Lockb0x Protocol Codex Forge
 
@@ -197,7 +187,6 @@ const statusDiv = document.getElementById("status");
 
 let extractedData = "";
 let extractedBytes = null;
-let metadata = {};
 let googleAuthToken = null;
 
 // Load token from chrome.storage on startup
@@ -364,7 +353,7 @@ extractPageBtn &&
             // Try Summarizer API
             try {
               summary = await summarizeText(extractedData);
-            } catch (err) {
+            } catch (_err) {
               // Fallback: use meta description or first 100 chars
               if (results[0].result.metaDesc) {
                 summary = results[0].result.metaDesc;
@@ -384,7 +373,7 @@ extractPageBtn &&
                     },
                   );
                 });
-              } catch (e) {
+              } catch (_e) {
                 screenshotUrl = "";
               }
             }
@@ -532,7 +521,7 @@ entryForm.addEventListener("submit", async (e) => {
   const isLargeFile = bytes && bytes.length > LARGE_FILE_THRESHOLD;
   if (isLargeFile) {
     // Wake up service worker before Port connection
-    chrome.runtime.sendMessage({ type: "PING" }, function (response) {
+    chrome.runtime.sendMessage({ type: "PING" }, function (_response) {
       if (chrome.runtime.lastError) {
         // Silently log for diagnostics; no user impact if upload proceeds
         console.warn(
@@ -621,6 +610,7 @@ copyBtn.addEventListener("click", () => {
 });
 
 // Revoke and refresh Google Auth token on demand
+// eslint-disable-next-line no-unused-vars
 const refreshGoogleAuth = () => {
   if (!googleAuthToken) {
     console.warn("[popup] No Google Auth token to refresh");

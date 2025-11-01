@@ -18,7 +18,11 @@ module.exports = [
       }
     },
     rules: {
-      "no-unused-vars": "warn",
+      "no-unused-vars": ["warn", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrors": "none"
+      }],
       "no-console": "off"
     },
   ignores: ["*.json", "**/*.json"]
