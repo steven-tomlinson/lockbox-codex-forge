@@ -1,4 +1,3 @@
-
 # Lockb0x Codex Forge — Chrome Extension
 
 ## Overview
@@ -245,3 +244,45 @@ npm run build-manifest
 ```
 
 This ensures secrets are never exposed in source control and the extension is packaged securely.
+
+## Manual Testing Instructions
+
+To manually test the Lockb0x Codex Forge Chrome Extension:
+
+1. **Install the Extension**
+   - Build the manifest: `npm run build-manifest`
+   - Load the extension in Chrome via `chrome://extensions` (Developer Mode > Load unpacked)
+   - Select the project folder containing `manifest.json`
+
+2. **Test Popup UI and Workflow**
+   - Click the extension icon to open the popup
+   - Upload a file (text, PDF, JSON, binary)
+   - Verify that the file is processed and a Codex entry is generated
+   - Check that hashes, canonicalization, signing, and anchoring steps complete with feedback
+   - Export the Codex entry as JSON and validate its contents
+
+3. **Google Drive Integration**
+   - Authenticate with Google when prompted
+   - Upload a file and ensure it is anchored to Google Drive
+   - Confirm that the payload existence check works and a download link is shown if validated
+
+4. **Error Handling**
+   - Try uploading unsupported file types or invalid data
+   - Confirm that error messages are shown in the popup UI
+   - Check Chrome DevTools (background and popup) for logs and error details
+
+5. **Schema Validation**
+   - Export a Codex entry and validate it using the popup
+   - Confirm that validation feedback is shown before export
+
+6. **General UI/UX**
+   - Test stepper navigation, incremental feedback, and error recovery
+   - Ensure accessibility features (keyboard navigation, screen reader labels) work as expected
+
+7. **Troubleshooting**
+   - If issues arise, reload the extension and check for errors in Chrome DevTools
+   - Review logs in `background.js` and popup for workflow details
+
+---
+
+For advanced testing scenarios, see `docs/DEVELOPMENT-PLAN.md` and `docs/AGENTS.md`.
