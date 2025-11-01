@@ -1,37 +1,91 @@
+
 # Lockb0x Codex Forge — Chrome Extension
 
 ## Overview
 
-Lockb0x Codex Forge is a Chrome Extension (Manifest V3) for creating secure, verifiable Lockb0x Codex Entries (v0.0.2) from web content or user-uploaded files. It leverages Chrome's built-in AI for automated metadata generation and supports both mock and Google anchor flows for robust protocol compliance.
+Lockb0x Codex Forge is a Chrome Extension (Manifest V3) for creating secure, verifiable Codex Entries from web content or user-uploaded files. It leverages Chrome's built-in AI for automated metadata generation and supports both mock and Google anchor flows for robust protocol compliance.
 
-**Current Capabilities (2025-10-24):**
+## Features
 
-- Binary file upload support for all payloads (text, PDF, JSON, binary)
-- Google authentication and Drive integration: user can sign in, upload payloads, and validate existence
-- Codex entry generation: hashes, canonicalizes, signs, anchors, and validates entries
-- Robust schema validation and export polish: validation runs before export, feedback shown in popup
-- Download and copy Codex entry as JSON from popup UI
-- Reliable Google auth token persistence in chrome.storage
-- UI feedback for all workflow steps, including incremental stepper and error messages
-- Payload existence validation in Drive before export, with download link shown if validated
-- Unit tests for protocol, AI, validation, anchor logic, and payload existence
+- Upload and anchor any file type (text, PDF, JSON, binary) to Google Drive or mock storage.
+- Google authentication and Drive integration for secure payload storage and validation.
+- Codex entry generation: hashes, canonicalizes, signs, anchors, and validates entries.
+- Schema validation and export polish: validation runs before export, feedback shown in popup.
+- Download and copy Codex entry as JSON from popup UI.
+- Reliable Google auth token persistence in chrome.storage.
+- UI feedback for all workflow steps, including incremental stepper and error messages.
+- Payload existence validation in Drive before export, with download link shown if validated.
 
-**Recent Progress:**
+## Current Status
 
-- All core features are now functionally complete and validated
-- Google Drive integration and payload existence validation are robust
-- UI/UX provides incremental feedback and error handling for all workflow steps
-- Documentation and contributor guides are being expanded
+- All core features are complete and validated.
+- Google Drive integration and payload existence validation are robust.
+- UI/UX provides incremental feedback and error handling for all workflow steps.
+- Unit testing has been removed for hackathon submission; focus is on shipping a working extension.
 
-**Remaining Gaps & Next Steps:**
+## Installation & Usage
 
-- UI/UX polish: improve layout, accessibility, and feedback clarity
-- Error handling: further refine messages and recovery instructions for all user actions
-- Documentation: expand contributor guides, troubleshooting, and verification instructions
-- Edge case and anchor testing: expand unit tests for Google anchor and payload validation
-- Finalize for hackathon/demo/production submission
+1. Clone the repository.
+2. Run `npm install` to install dependencies.
+3. Add your Google OAuth client ID to `.env` (see `.env.example` for format).
+4. Run `npm run build-manifest` to generate `manifest.json`.
+5. Load the extension in Chrome via `chrome://extensions` (Developer Mode > Load unpacked).
+6. Use the popup to upload files, generate Codex entries, and export or validate as needed.
 
-See DEVELOPMENT-PLAN.md for full checklist and technical milestones.
+## Secure Manifest & OAuth Client ID Handling
+
+- `manifest.template.json` contains a placeholder `${CHROME_OAUTH_CLIENT_ID}`.
+- Store your actual client ID in `.env` (not committed to source control).
+- Run `npm run build-manifest` to generate `manifest.json` before packaging or loading the extension.
+
+## Contributor Guide
+
+- When adding new anchor/storage types, ensure existence validation is implemented and tested.
+- Document new validation logic and update tests as needed.
+- Expand contributor guides and troubleshooting as new features are added.
+
+## Troubleshooting
+
+- Use Chrome DevTools for logs and error messages.
+- Review status and error messages in the popup UI for feedback.
+- For anchor and signing errors, see background.js logs.
+- Common issues and solutions are documented in the README and AGENTS.md.
+
+## Roadmap
+
+- UI/UX polish: improve layout, accessibility, and feedback clarity.
+- Error handling: further refine messages and recovery instructions for all user actions.
+- Documentation: expand contributor guides, troubleshooting, and verification instructions.
+- Finalize for hackathon/demo/production submission.
+
+## Team Roles
+
+- Project Lead: Oversees development, documentation, roadmap, and hackathon strategy.
+- AI Integration: Implements and tests Chrome AI APIs, metadata generation, and fallback logic.
+- Protocol Engineer: Develops and tests protocol logic, anchor flows, and schema validation.
+- UI/UX Designer: Designs popup UI, stepper, and user flows; improves accessibility and error feedback.
+- Google Cloud Integration: Handles Google anchor API, Drive integration, authentication, and token persistence.
+- QA & Testing: Conducts user testing, feedback collection, and expands unit/integration tests for all flows.
+- Documentation: Updates README, contributor guides, troubleshooting, and verification instructions.
+
+## Submission Checklist
+
+- README includes elevator pitch, impact, competitive analysis, personas, use cases, demo, technical overview, and roadmap.
+- Demo assets (screenshots, GIFs, video) are present.
+- User feedback and testing summary included.
+- Competitive analysis section completed.
+- Roadmap for future development included.
+- All hackathon requirements mapped and documented.
+- Documentation is organized and accessible for judges.
+
+---
+
+For more details, see:
+- `docs/DEVELOPMENT-PLAN.md` for technical milestones and roadmap.
+- `docs/AGENTS.md` for team roles and assignments.
+- `docs/GoogleCloudAnchor.md` for integration status and next steps.
+
+Lockb0x Codex Forge — Secure, AI-powered, and ready for the future of digital provenance.
 
 ## Comprehensive Improvement Plan (2025-10-20)
 
