@@ -40,7 +40,6 @@ Lockb0x Codex Forge is a Chrome Extension (Manifest V3) for creating secure, ver
 ## Contributor Guide
 
 - When adding new anchor/storage types, ensure existence validation is implemented and tested.
-- Document new validation logic and update tests as needed.
 - Expand contributor guides and troubleshooting as new features are added.
 
 ## Troubleshooting

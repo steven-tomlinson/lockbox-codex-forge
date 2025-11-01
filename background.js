@@ -74,7 +74,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         let integrity = null;
         let fileText = null;
         // Step 1: Upload payload to Google Drive (if Google anchor)
-        if (anchorType === "google" && googleAuthToken) {
+        let freshToken = googleAuthToken;
+        if (anchorType === "google") {
+          // Always refresh token before upload
+          freshToken = await new Promise((resolve) => {
+            chrome.identity.getAuthToken({ interactive: true }, (token) => {
+              resolve(token);
+            });
+          });
+        }
+        if (anchorType === "google" && freshToken) {
           let mimeType = "application/octet-stream";
           if (filename.match(/\.txt$/i)) mimeType = "text/plain";
           else if (filename.match(/\.json$/i)) mimeType = "application/json";
@@ -84,7 +93,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
               bytes: fileBytes,
               filename,
               mimeType,
-              token: googleAuthToken,
+              token: freshToken,
             });
           } catch (err) {
             console.error(

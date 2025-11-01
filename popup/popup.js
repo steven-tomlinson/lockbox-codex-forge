@@ -250,35 +250,21 @@ async function updateAuthUI() {
     authStatus.style.color = "#00796b";
     userProfileDiv.textContent = "Loading profile...";
     userProfileDiv.style.display = "block";
-    let profile = await fetchGoogleProfile(googleAuthToken);
-    // If profile fetch fails, try to refresh token and fetch again
-    if (!profile) {
-      chrome.identity.getAuthToken(
-        { interactive: true },
-        async function (newToken) {
-          if (chrome.runtime.lastError || !newToken) {
-            userProfileDiv.textContent =
-              "Google profile unavailable. Please sign in again.";
-            statusDiv.textContent =
-              "Google profile unavailable. Try signing in again.";
-            return;
-          }
-          googleAuthToken = newToken;
-          chrome.storage.local.set({ googleAuthToken: newToken });
-          profile = await fetchGoogleProfile(newToken);
-          if (profile) {
-            userProfileDiv.innerHTML = `<img src="${profile.photo}" alt="avatar" style="width:32px;height:32px;border-radius:50%;vertical-align:middle;margin-right:8px;"> <span style="font-weight:bold;">${profile.name}</span> <span style="color:#616161;">(${profile.email})</span>`;
-          } else {
-            userProfileDiv.textContent =
-              "Google profile unavailable. Please check your account permissions.";
-            statusDiv.textContent =
-              "Google profile unavailable. Check permissions.";
-          }
-        },
-      );
-    } else {
-      userProfileDiv.innerHTML = `<img src="${profile.photo}" alt="avatar" style="width:32px;height:32px;border-radius:50%;vertical-align:middle;margin-right:8px;"> <span style="font-weight:bold;">${profile.name}</span> <span style="color:#616161;">(${profile.email})</span>`;
-    }
+    // Try to load profile from chrome.storage first
+    chrome.storage.local.get(["googleUserProfile"], async (result) => {
+      let profile = result.googleUserProfile;
+      if (!profile) {
+        // If not cached, fetch from Google
+        const { fetchGoogleUserProfile } = await import("../lib/google-auth-utils.js");
+        profile = await fetchGoogleUserProfile(googleAuthToken);
+      }
+      if (profile && profile.name && profile.email && profile.picture) {
+        userProfileDiv.innerHTML = `<img src="${profile.picture}" alt="avatar" style="width:32px;height:32px;border-radius:50%;vertical-align:middle;margin-right:8px;"> <span style="font-weight:bold;">${profile.name}</span> <span style="color:#616161;">(${profile.email})</span>`;
+      } else {
+        userProfileDiv.textContent = "Google profile unavailable. Please sign in again.";
+        statusDiv.textContent = "Google profile unavailable. Try signing in again.";
+      }
+    });
   } else {
     googleSignInBtn.style.display = "inline-block";
     googleLogOutBtn.style.display = "none";
