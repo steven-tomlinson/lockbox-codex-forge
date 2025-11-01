@@ -11,7 +11,6 @@
   },
   "devDependencies": {
     "eslint": "^9.38.0",
-    "jest": "^30.2.0",
     "jsdom": "^27.0.1",
     "prettier": "^3.6.2",
     "webidl-conversions": "^8.0.0",

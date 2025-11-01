@@ -1,6 +1,5 @@
 export default {
   testEnvironment: "node",
-  extensionsToTreatAsEsm: [".js"],
   transform: {},
   moduleFileExtensions: ["js", "json", "node"],
-};
+// Jest config removed for cleanup
