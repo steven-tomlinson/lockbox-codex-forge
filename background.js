@@ -76,7 +76,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         // Step 1: Upload payload to Google Drive (if Google anchor)
         let freshToken = googleAuthToken;
         if (anchorType === "google") {
-          // Always refresh token before upload
+          // Always refresh token before upload and anchor
           freshToken = await new Promise((resolve) => {
             chrome.identity.getAuthToken({ interactive: true }, (token) => {
               resolve(token);
@@ -127,11 +127,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           return;
         }
         // Step 3: Anchor
-        if (anchorType === "google" && googleAuthToken) {
+        if (anchorType === "google" && freshToken) {
           try {
             anchor = await anchorGoogle(
               { id: uuidv4(), storage: { integrity_proof: integrity } },
-              googleAuthToken,
+              freshToken,
             );
           } catch (err) {
             console.error("[background] Google anchor error:", err);
@@ -177,11 +177,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             anchorType === "google" && payloadDriveInfo ? "gdrive" : "local",
         });
         await signCodexEntry(entry);
-        if (anchorType === "google" && googleAuthToken) {
+        if (anchorType === "google" && freshToken) {
           try {
             codexDriveInfo = await uploadCodexEntryToGoogleDrive({
               entry,
-              token: googleAuthToken,
+              token: freshToken,
             });
           } catch (err) {
             console.error(

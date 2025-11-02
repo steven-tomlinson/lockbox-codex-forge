@@ -211,7 +211,12 @@ const userProfileDiv = document.createElement("div");
 userProfileDiv.id = "userProfile";
 userProfileDiv.style.display = "none";
 userProfileDiv.style.marginTop = "8px";
-statusDiv.parentNode.insertBefore(userProfileDiv, statusDiv);
+
+const authStatus = document.getElementById("authStatus");
+// Insert userProfileDiv directly after authStatus
+if (authStatus && authStatus.parentNode) {
+  authStatus.parentNode.insertBefore(userProfileDiv, authStatus.nextSibling);
+}
 
 function fetchGoogleProfile(token) {
   return fetch(
@@ -405,7 +410,7 @@ extractPageBtn &&
     });
   });
 
-const authStatus = document.getElementById("authStatus");
+// Already declared above: const authStatus = document.getElementById("authStatus");
 if (anchorType && googleSignInBtn && authStatus) {
   anchorType.addEventListener("change", () => {
     updateAuthUI();
