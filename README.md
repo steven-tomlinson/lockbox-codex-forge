@@ -139,7 +139,7 @@ Refer to these utilities and patterns for any future Google API integration or t
 
 ## Team Roles
 
-- **Project Lead:** Oversees development, documentation, roadmap, and hackathon strategy.
+**Project Lead:** Oversees development, documentation, roadmap, and release strategy.
 - **AI Integration (PENDING):** Will implement and test Chrome Built-In AI APIs when available, including metadata generation and fallback logic.
 - **Protocol Engineer:** Develops and tests protocol logic, anchor flows, and schema validation.
 - **UI/UX Designer:** Designs popup UI, stepper, and user flows; improves accessibility and error feedback.
@@ -154,7 +154,7 @@ Refer to these utilities and patterns for any future Google API integration or t
 - User feedback and testing summary included.
 - Competitive analysis section completed.
 - Roadmap for future development included.
-- All hackathon requirements mapped and documented.
+  
 - Documentation is organized and accessible for judges.
 
 ---
@@ -196,7 +196,7 @@ Lockb0x Codex Forge — Secure, AI-powered, and ready for the future of digital 
 - Validate ES256 signature using the JWK in kid
 - Use provided verification script or tool for automated checks
 
-## Roadmap & Hackathon Readiness
+## Roadmap & Release Readiness
 
 ### What's Working
 - ✓ Binary file upload support
@@ -253,7 +253,7 @@ Demo assets (screenshots, GIFs, video) are present
 User feedback and testing summary included
 Competitive analysis section completed
 Roadmap for future development included
-All hackathon requirements mapped and documented
+  
 Documentation is organized and accessible for judges
 
 ## Current Build Status (as of 2025-11-01)
