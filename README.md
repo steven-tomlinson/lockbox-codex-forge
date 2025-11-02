@@ -2,17 +2,14 @@
 
 ## Overview
 
-Lockb0x Codex Forge is a Chrome Extension (Manifest V3) for creating secure, verifiable Codex Entries from web content or user-uploaded files. It implements the lockb0x protocol with robust hashing, signing, and anchoring capabilities, supporting both mock and Google Drive anchor flows for protocol compliance. The latest evolutionary release introduces zip archiving for payloads and the Lockb0x Codex Recept and Proof Primitive file format, paving the way for a final release on the Google Marketplace. After launch, the project will be forked to support Microsoft Edge and OneDrive integration.
+Lockb0x Codex Forge is a Chrome Extension (Manifest V3) for creating secure, verifiable Codex Entries from web content or user-uploaded files. It implements the lockb0x protocol with robust hashing, signing, and anchoring capabilities, supporting both mock and Google Drive anchor flows for protocol compliance. The latest evolutionary release introduces zip archiving for payloads and the Lockb0x Codex Receipt and Proof Primitive file format, paving the way for a final release on the Google Marketplace. After launch, the project will be forked to support Microsoft Edge and OneDrive integration.
 
-**Note on AI Features:** The extension currently uses fallback text extraction for metadata generation. Chrome Built-In AI features (e.g., `chrome.ai.summarizer`, `chrome.ai.prompt`) are referenced in the codebase but not yet implemented with the actual Chrome AI APIs, as these APIs are still experimental and not widely available.
+**Note on AI Features:** The extension currently uses fallback text extraction for metadata generation. Chrome Built-In AI features (e.g., `chrome.ai.summarizer`, `chrome.ai.prompt`) are referenced in the codebase but not yet implemented with the actual Chrome AI APIs, as these APIs are still experimental and not widely available. Consequently thesse features are de-prioritized.
 
 ## Features
 
 ### Implemented and Validated
- - **Zip Archive Workflow:** The payload and codex entry are packaged together in a verifiable zip archive (see docs/ZIP-ARCHIVE.md). This is the top priority for the next release.
- - **Zip Archiving:** Archive payloads as zip files for efficient storage and export
- - **Lockb0x Codex Recept & Proof Primitive:** Generate and export the final file format for digital provenance and verification
-- **Lockb0x Protocol Core:** Complete implementation of UUID generation, SHA-256 hashing, ni-URI encoding, JSON canonicalization (RFC 8785), and ES256 signing
+ - **Lockb0x Protocol Core:** Complete implementation of UUID generation, SHA-256 hashing, ni-URI encoding, JSON canonicalization (RFC 8785), and ES256 signing
 - **File Upload Support:** Upload and anchor any file type (text, PDF, JSON, binary) to Google Drive or mock storage
 - **Google Drive Integration:** Secure payload storage, authentication, and token persistence in chrome.storage
 - **Dual Anchor Support:** Both mock (local) and Google Drive anchor flows fully functional
@@ -23,10 +20,9 @@ Lockb0x Codex Forge is a Chrome Extension (Manifest V3) for creating secure, ver
 - **UI/UX:** Incremental stepper feedback, error messages, and recovery instructions for all workflow steps
 
 ### Not Yet Implemented
-- **Chrome Built-In AI Integration:** The codebase includes references to Chrome AI APIs (`chrome.ai.summarizer`, `chrome.ai.prompt`) for automated metadata generation, but these are not yet implemented. Currently, the extension uses simple text truncation fallbacks:
-  - AI summarization for content → Falls back to first 100 characters
-  - Process tag generation → Falls back to static tags ("AI-Summarized-Web-Page" or "File-Upload-Hashed")
-  - Certificate summary generation → Falls back to basic template strings
+- **Zip Archive Workflow:** The payload and codex entry are packaged together in a verifiable zip archive (see docs/ZIP-ARCHIVE.md). This is the top priority for the next release.
+ - **Zip Archiving:** Archive payloads as zip files for efficient storage and export
+ - **Lockb0x Codex Reciept & Proof Primitive:** Generate and export the final file format for digital provenance and verification
 
 ## Current Status
 
@@ -38,21 +34,16 @@ Lockb0x Codex Forge is a Chrome Extension (Manifest V3) for creating secure, ver
 - **UI/UX:** Complete workflow with incremental feedback, error handling, and stepper status
 
 ### Known Gaps
-- **Chrome Built-In AI:** Not implemented; currently using fallback text extraction
-  - No integration with experimental Chrome AI APIs
-  - Metadata generation uses simple text truncation instead of AI summarization
-  - Process tags and certificate summaries use static fallbacks
-- **Testing Infrastructure:** Test files exist, test script added to package.json, but vitest needs to be installed
-  - To enable testing: `npm install --save-dev vitest jsdom`
-  - Then run: `npm test`
+- **Zip Archive Workflow:** The payload and codex entry are packaged together in a verifiable zip archive (see docs/ZIP-ARCHIVE.md). This is the top priority for the next release.
+ - **Zip Archiving:** Archive payloads as zip files for efficient storage and export
+ - **Lockb0x Codex Receipt & Proof Primitive:** Generate and export the final file format for digital provenance and verification
 - **Code Quality:** All linting warnings have been fixed
 
 ### Proof of Concept Status
 The extension successfully demonstrates:
 - ✓ Lockb0x protocol compliance (hashing, signing, anchoring, validation)
 - ✓ Google Drive as a storage and anchor backend
-- ✓ Codex entry creation, export, and schema validation
-- ✗ Chrome Built-In AI integration (planned but not implemented)
+- ✓ Codex entry creation, export, and schema validationlemented)
 
 ## Installation & Usage
 
@@ -123,23 +114,15 @@ Refer to these utilities and patterns for any future Google API integration or t
 ### Planned / In Progress
  - Final release and publication on Google Marketplace
  - Fork for Microsoft Edge and OneDrive integration
-- **Chrome Built-In AI Integration:**
-  - Implement actual Chrome AI APIs (when stable/available)
-  - Replace fallback text extraction with AI-powered summarization
-  - Integrate AI-generated process tags and certificate summaries
-  - Add feature detection and graceful fallback for browsers without AI support
 - **Testing Infrastructure:**
-  - Add test runner script to package.json
-  - Expand test coverage for all modules
+  - Verify test runner script to package.json
+  - Verify test coverage for all modules and enhance or add as needed
   - Add integration tests for end-to-end workflows
 - **Code Quality:**
-  - Fix linting warnings (unused variables)
   - Improve error handling consistency
   - Add JSDoc comments for better code documentation
-- **UI/UX Polish:**
-  - Further refine layout, accessibility, and feedback clarity
-  - Improve stepper visuals and status indicators
-  - Add tooltips and help text for complex features
+- **UI/UX Locked:**
+  - No further refinements or changes
 - **Documentation:**
   - Expand contributor guides with setup instructions
   - Create video tutorials and demos
@@ -163,7 +146,7 @@ Refer to these utilities and patterns for any future Google API integration or t
 - Competitive analysis section completed.
 - Roadmap for future development included.
   
-- Documentation is organized and accessible for judges.
+- Documentation is organized and accessible for public.
 
 ---
 
@@ -172,19 +155,6 @@ For more details, see:
 - `docs/DEVELOPMENT-PLAN.md` for technical milestones and roadmap.
 - `docs/AGENTS.md` for team roles and assignments.
 - `docs/GoogleCloudAnchor.md` for integration status and next steps.
-
-Lockb0x Codex Forge — Secure, AI-powered, and ready for the future of digital provenance.
-
-## Comprehensive Improvement Plan (2025-10-20)
-
-- Binary file upload support for all payloads
-- Reliable Google auth token persistence
-- Improved error handling and UI feedback
-- Consistent workflow and file references
-- Download link for payload files
-- Enhanced schema validation and export polish
-- Expanded unit tests for anchor, payload, and edge cases
-- Updated documentation and contributor guides
 
 ## Workflow & Features
 
@@ -205,30 +175,6 @@ Lockb0x Codex Forge — Secure, AI-powered, and ready for the future of digital 
 - Validate ES256 signature using the JWK in kid
 - Use provided verification script or tool for automated checks
 
-## Roadmap & Release Readiness
-
-### What's Working
-- ✓ Binary file upload support
-- ✓ Reliable Google auth token persistence
-- ✓ Improved error handling and UI feedback
-- ✓ Consistent workflow and file references
-- ✓ Download link for payload files
-- ✓ Enhanced schema validation and export polish
-- ✓ Core lockb0x protocol implementation
-
-### What's Not Yet Implemented
-- ✗ Chrome Built-In AI integration (currently using fallbacks)
-- ✗ Test runner configuration
-- ✗ Some code quality improvements (linting warnings)
-
-**Current Status:**
-
-- Core features are complete and validated
-- Lockb0x protocol and Google Drive integration are robust and working
-- Chrome AI features are planned but use fallback implementations
-- Ready for demo/testing, but AI features require additional implementation
-
-See DEVELOPMENT-PLAN.md for full checklist and technical milestones
 
 ## Contributor Guide
 
@@ -255,53 +201,6 @@ Pull requests and feedback are welcome!
 
 Lockb0x Codex Forge — Secure, AI-powered, and ready for the future of digital provenance.
 
-## Submission Checklist
-
-README includes elevator pitch, impact, competitive analysis, personas, use cases, demo, technical overview, and roadmap
-Demo assets (screenshots, GIFs, video) are present
-User feedback and testing summary included
-Competitive analysis section completed
-Roadmap for future development included
-  
-Documentation is organized and accessible for judges
-
-## Current Build Status (as of 2025-11-01)
-
-### Implemented and Validated ✓
-- Protocol core (UUID, SHA-256, ni-URI, canonicalization, signing)
-- Google Drive integration for payload storage and anchoring
-- Mock anchor flow for local/offline testing
-- Binary file upload support for all file types
-- Schema validation (lockb0x codex v0.0.2)
-- Export and download functionality
-- Payload existence validation
-- UI/UX feedback with stepper status and error handling
-
-### Not Implemented ✗
-- Chrome Built-In AI integration
-  - No `chrome.ai.summarizer` implementation
-  - No `chrome.ai.prompt` implementation
-  - Currently using text truncation fallbacks
-- Test runner (test files exist but no npm test script)
-- Various code quality improvements (unused variables, etc.)
-
-### Known Issues
-- Linting warnings for unused variables in multiple files
-- Schema allows "gdrive" protocol but official schema template uses "gcs"
-- AI functions always fall back to non-AI implementations
-
-## Troubleshooting & Error Handling
-
-### Common Issues
-
-- **Unchecked runtime.lastError: Cannot access a chrome:// URL**
-  - This occurs if you try to extract content from a Chrome internal page (chrome://). Only extract from regular web pages.
-- **Uncaught SyntaxError: Cannot use import statement outside a module**
-  - Ensure popup.js is loaded with `<script type="module">` in popup.html. All imports should use correct relative paths.
-- **Google Sign-In Not Working**
-  - Make sure you have the "identity" permission in manifest.json and are signed into Chrome with a Google account.
-- **Service Worker Registration Failed**
-  - Confirm that background.js is declared as a module in manifest.json (`type: "module"`).
 
 ### Debugging Tips
 

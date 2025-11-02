@@ -13,7 +13,7 @@ The Zip Archive feature enhances Lockb0x Codex Forge by packaging the payload an
 
 2. **Zip Archive Creation**
    - The payload is added to a new zip file (the "Zip Archive") using the features in `lib/zip-archive.js`.
-   - No compression is applied; files are stored as-is for integrity.
+   - No compression is applied; files are stored as-is for integrity however it is encrypted with the current User's email address if they are authenticated and have selected teh Google Anchor, if they are using the Mock Anchor, encrypt it wusing the password "mock".
    - The current Lockb0x Codex Entry JSON is added as an archive-level comment in the zip.
    - The zip contains:
      - The payload file (original filename)
@@ -21,18 +21,18 @@ The Zip Archive feature enhances Lockb0x Codex Forge by packaging the payload an
 
 3. **Upload to Google Drive**
    - The Zip Archive is uploaded to Google Drive.
-   - The Lockb0x Codex Entry is updated with storage metadata (protocol, location, integrity proof).
+   - The Lockb0x Codex Entry is updated with storage and anchor metadata (protocol, location, integrity proof, tx, url).
    - A new signature is generated and appended to the signature block, covering the updated codex entry.
 
 4. **Final Codex Entry Handling**
-   - The final Lockb0x Codex Entry (with updated storage and signatures) is uploaded to Google Drive.
+   - The final Lockb0x Codex Entry (with updated storage, anchor, and signatures) is uploaded to Google Drive.
    - The final codex entry is made available for download or copying to clipboard.
 
 ## Implementation Details
 
 - The zip archive is created using the `createCodexZipArchive` function in `lib/zip-archive.js`.
-- Archive-level comment contains the full codex entry JSON for provenance.
-- The codex entry inside the zip excludes `storage.location` to avoid circular references.
+- Archive-level comment contains a copy of the codex entry JSON that is also stored with the payload in the encrypted zip file, for provenance and verification.
+- The codex entry inside the zip excludes `storage.location` `anchor.tx` `anchor.url` because it is not known at the time the Zip Archive is created, since it has not been uploaded yet.
 - All cryptographic operations (hashing, signing) follow the lockb0x protocol.
 - The workflow ensures that every step is verifiable and auditable.
 
