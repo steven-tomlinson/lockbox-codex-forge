@@ -32,8 +32,7 @@ function handleCodexResponse(response) {
               {
                 type: "VALIDATE_PAYLOAD_EXISTENCE",
                 payload: {
-                  fileId: response.payloadDriveInfo.id,
-                  token: googleAuthToken,
+                  fileId: response.payloadDriveInfo.id
                 },
               },
               resolve,
@@ -42,6 +41,10 @@ function handleCodexResponse(response) {
           if (validatePayload && validatePayload.ok && validatePayload.exists) {
             payloadExists = true;
             payloadValidationMsg = "Payload exists on Google Drive.";
+          } else if (validatePayload && validatePayload.error && validatePayload.error.includes('token expired')) {
+            payloadExists = false;
+            payloadValidationMsg = "Google token expired. Please sign in again.";
+            await updateAuthUI();
           } else {
             payloadExists = false;
             payloadValidationMsg = "Payload NOT found on Google Drive.";
@@ -105,10 +108,15 @@ function updateStepper(step, status) {
 }
 // Utility to show error and recovery instructions in the popup
 function showError(message, recovery) {
-  statusDiv.textContent = `Error: ${message}`;
-  statusDiv.style.color = "#c62828";
-  if (recovery) {
-    statusDiv.textContent += `\nRecovery: ${recovery}`;
+  if (statusDiv) {
+    statusDiv.textContent = `Error: ${message}`;
+    statusDiv.style.color = "#c62828";
+    if (recovery) {
+      statusDiv.textContent += `\nRecovery: ${recovery}`;
+    }
+  }
+  if (typeof generateBtn !== 'undefined' && generateBtn) {
+    generateBtn.disabled = false;
   }
   console.error("[popup] Error:", message, recovery || "");
 }
@@ -198,13 +206,18 @@ const statusDiv = document.getElementById("status");
 let extractedData = "";
 let extractedBytes = null;
 let metadata = {};
+
+import {
+  getGoogleAuthToken,
+  setGoogleAuthToken,
+  removeGoogleAuthToken,
+} from "../lib/google-auth-utils.js";
+
 let googleAuthToken = null;
 
 // Load token from chrome.storage on startup
-chrome.storage.local.get(["googleAuthToken"], (result) => {
-  if (result && result.googleAuthToken) {
-    googleAuthToken = result.googleAuthToken;
-  }
+getGoogleAuthToken().then((token) => {
+  googleAuthToken = token;
 });
 
 const userProfileDiv = document.createElement("div");
@@ -430,7 +443,7 @@ if (googleSignInBtn && authStatus) {
         console.log("[popup] Google sign-in response:", response);
         if (response && response.ok && response.token) {
           googleAuthToken = response.token;
-          chrome.storage.local.set({ googleAuthToken: response.token });
+          await setGoogleAuthToken(response.token);
           // Fetch and store user profile
           const { fetchGoogleUserProfile } = await import(
             "../lib/google-auth-utils.js"
@@ -452,7 +465,7 @@ if (googleSignInBtn && authStatus) {
   });
 }
 
-googleLogOutBtn.addEventListener("click", () => {
+googleLogOutBtn.addEventListener("click", async () => {
   statusDiv.textContent = "Logging out from Google...";
   if (!googleAuthToken) {
     updateAuthUI();
@@ -460,18 +473,20 @@ googleLogOutBtn.addEventListener("click", () => {
   }
   chrome.identity.removeCachedAuthToken(
     { token: googleAuthToken },
-    function () {
-      chrome.storage.local.remove("googleAuthToken", async () => {
-        googleAuthToken = null;
-        statusDiv.textContent = "Logged out from Google.";
-        await updateAuthUI();
-      });
+    async function () {
+      await removeGoogleAuthToken();
+      googleAuthToken = null;
+      statusDiv.textContent = "Logged out from Google.";
+      await updateAuthUI();
     },
   );
 });
 
+
 entryForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+  // Always get the latest token before any Google API call
+  googleAuthToken = await getGoogleAuthToken();
   // Block if Google Anchor is selected and not signed in
   if (anchorType && anchorType.value === "google" && !googleAuthToken) {
     showError(
