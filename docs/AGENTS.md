@@ -4,6 +4,7 @@
 ## Status Summary (Updated 2025-11-01)
 
 - See [README.md](../README.md) for current features, troubleshooting, and user guidance.
+- See [ZIP-ARCHIVE.md](./ZIP-ARCHIVE.md) for zip archive workflow and implementation details.
 - See [DEVELOPMENT-PLAN.md](./DEVELOPMENT-PLAN.md) for architecture, phased breakdown, and build status.
 
 ### What's Working ✓
@@ -72,19 +73,7 @@
 - **QA & Testing:** Conducts user testing, maintains test infrastructure, collects feedback
 - **Documentation:** Maintains README, contributor guides, troubleshooting docs
 
-## Hackathon Deliverable Assignments
 
-- File upload & payload storage: ✓ Complete (Protocol Engineer, UI/UX Designer)
-- Error handling & UI feedback: ✓ Complete (UI/UX Designer, QA & Testing)
-- Google auth token persistence: ✓ Complete (Google Cloud Integration)
-- Workflow & reference consistency: ✓ Complete (Protocol Engineer)
-- Schema validation & export polish: ✓ Complete (Protocol Engineer, QA & Testing)
-- Documentation updates: **IN PROGRESS** (Documentation, Project Lead)
-- Chrome AI integration: **NOT STARTED** (AI Integration - pending API availability)
-- Test infrastructure: **PARTIAL** (QA & Testing - files exist, need runner config)
-- Code quality cleanup: **PENDING** (All team members)
 
-## Progress Tracking
 
-See DEVELOPMENT-PLAN.md for unified checklist and milestone status. This document now reflects the true state of implementation as of 2025-11-01.
 

@@ -12,6 +12,7 @@ Create a Chrome Extension (Manifest V3) for secure, verifiable Codex Entries fro
 ## Current Status & Milestones (Updated 2025-11-01)
 
 ### Completed Features ✓
+ - Zip Archive workflow (see docs/ZIP-ARCHIVE.md) is the next milestone and must be completed before marketplace release.
 
 - **Lockb0x Protocol Core:**
   - UUIDv4 generation (RFC 9562)
@@ -95,6 +96,7 @@ Create a Chrome Extension (Manifest V3) for secure, verifiable Codex Entries fro
 ## Roadmap & Remaining Gaps
 
 ### Phase 1: Documentation & Transparency (Current)
+ - Prioritize Zip Archive feature implementation before extension is published to the marketplace.
 - ✓ Audit codebase for true implementation status
 - **IN PROGRESS:** Update all documentation to reflect reality
 - Document gaps and create implementation plan
