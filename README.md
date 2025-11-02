@@ -69,8 +69,31 @@ The extension successfully demonstrates:
 ## Contributor Guide
 
 - When adding new anchor/storage types, ensure existence validation is implemented and tested.
-- Document new validation logic and update tests as needed.
 - Expand contributor guides and troubleshooting as new features are added.
+
+
+## Google Authentication Token Lifecycle & Usage
+
+- The extension uses a single Google OAuth token for all Drive and profile operations.
+- Token is stored in `chrome.storage.local` under the key `googleAuthToken`.
+- Before any Google API call, the extension checks for a valid token and refreshes it if expired or missing.
+- If a 401 error is returned by the Drive API, the token is removed and a new one is requested automatically, with the operation retried once.
+- All token management logic is centralized in `lib/google-auth-utils.js`.
+- UI elements and workflow steps always reflect the current authentication state.
+
+### Inline Code Comments
+
+// In lib/google-auth-utils.js:
+// getGoogleAuthToken() — retrieves token from chrome.storage.local
+// setGoogleAuthToken(token) — stores token
+// removeGoogleAuthToken() — removes token
+// getValidGoogleAuthToken() — ensures a valid token, refreshing if needed
+
+// In background.js and popup.js:
+// Always use getValidGoogleAuthToken() before Google API calls
+// On 401 errors, remove and refresh token, then retry once
+
+Refer to these utilities and patterns for any future Google API integration or troubleshooting.
 
 ## Troubleshooting
 

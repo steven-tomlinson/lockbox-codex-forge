@@ -8,17 +8,22 @@ import {
 import { summarizeContent, generateProcessTag } from "./lib/ai.js";
 import { validateCodexEntry } from "./lib/validate.js";
 import { signCodexEntry, buildUnsignedCodexEntry } from "./lib/codex-utils.js";
+
 import {
   uploadFileToGoogleDrive,
   uploadCodexEntryToGoogleDrive,
   checkDriveFileExists,
 } from "./lib/drive-utils.js";
-// Google OAuth token storage (kept for potential future use in token refresh)
-let googleAuthToken = null; // eslint-disable-line no-unused-vars
+import {
+  getGoogleAuthToken,
+  setGoogleAuthToken,
+  removeGoogleAuthToken,
+  getValidGoogleAuthToken,
+} from "./lib/google-auth-utils.js";
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "GOOGLE_AUTH_REQUEST") {
-    chrome.identity.getAuthToken({ interactive: true }, (token) => {
+    chrome.identity.getAuthToken({ interactive: true }, async (token) => {
       if (chrome.runtime.lastError || !token) {
         const errMsg = chrome.runtime.lastError
           ? chrome.runtime.lastError.message ||
@@ -27,8 +32,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         console.error("[background] Google Auth error:", errMsg);
         sendResponse({ ok: false, error: errMsg });
       } else {
-        googleAuthToken = token;
-        chrome.storage.local.set({ googleAuthToken: token });
+        await setGoogleAuthToken(token);
         sendResponse({ ok: true, token });
       }
     });
@@ -38,11 +42,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "VALIDATE_PAYLOAD_EXISTENCE") {
     (async function () {
       try {
-        const { fileId, token } = msg.payload;
+        const { fileId } = msg.payload;
+        // Always use the latest token from storage
+        const token = await getGoogleAuthToken();
         const metadata = await checkDriveFileExists({ fileId, token });
         sendResponse({ ok: true, exists: true, metadata });
       } catch (err) {
-        sendResponse({ ok: false, exists: false, error: err.message });
+        // Centralized error handling for token expiration
+        if (err.message && err.message.includes('401')) {
+          await removeGoogleAuthToken();
+          sendResponse({ ok: false, exists: false, error: 'Google token expired. Please sign in again.' });
+        } else {
+          sendResponse({ ok: false, exists: false, error: err.message });
+        }
       }
     })();
     return true;
@@ -74,7 +86,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         let integrity = null;
         let fileText = null;
         // Step 1: Upload payload to Google Drive (if Google anchor)
-        if (anchorType === "google" && googleAuthToken) {
+        let freshToken = null;
+        if (anchorType === "google") {
+          freshToken = await getValidGoogleAuthToken();
+        }
+        if (anchorType === "google" && freshToken) {
           let mimeType = "application/octet-stream";
           if (filename.match(/\.txt$/i)) mimeType = "text/plain";
           else if (filename.match(/\.json$/i)) mimeType = "application/json";
@@ -84,19 +100,36 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
               bytes: fileBytes,
               filename,
               mimeType,
-              token: googleAuthToken,
+              token: freshToken,
             });
           } catch (err) {
-            console.error(
-              "[background] Google Drive payload upload error:",
-              err,
-            );
-            sendResponse({
-              ok: false,
-              error: "Google Drive payload upload error",
-              details: err,
-            });
-            return;
+            // If 401, try refreshing token and retry once
+            if (err.message && err.message.includes("401")) {
+              await removeGoogleAuthToken();
+              freshToken = await getValidGoogleAuthToken();
+              try {
+                payloadDriveInfo = await uploadFileToGoogleDrive({
+                  bytes: fileBytes,
+                  filename,
+                  mimeType,
+                  token: freshToken,
+                });
+              } catch (err2) {
+                sendResponse({
+                  ok: false,
+                  error: "Google Drive payload upload error (after refresh)",
+                  details: err2,
+                });
+                return;
+              }
+            } else {
+              sendResponse({
+                ok: false,
+                error: "Google Drive payload upload error",
+                details: err,
+              });
+              return;
+            }
           }
         }
         // Step 2: Compute hash and integrity_proof
@@ -118,11 +151,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           return;
         }
         // Step 3: Anchor
-        if (anchorType === "google" && googleAuthToken) {
+        if (anchorType === "google" && freshToken) {
           try {
             anchor = await anchorGoogle(
               { id: uuidv4(), storage: { integrity_proof: integrity } },
-              googleAuthToken,
+              freshToken,
             );
           } catch (err) {
             console.error("[background] Google anchor error:", err);
@@ -168,11 +201,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             anchorType === "google" && payloadDriveInfo ? "gdrive" : "local",
         });
         await signCodexEntry(entry);
-        if (anchorType === "google" && googleAuthToken) {
+        if (anchorType === "google" && freshToken) {
           try {
             codexDriveInfo = await uploadCodexEntryToGoogleDrive({
               entry,
-              token: googleAuthToken,
+              token: freshToken,
             });
           } catch (err) {
             console.error(
@@ -252,7 +285,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           let integrity = null;
           let fileText = null;
           // Step 1: Upload payload to Google Drive (if Google anchor)
-          if (metadata.anchorType === "google" && metadata.googleAuthToken) {
+          if (metadata.anchorType === "google") {
+            metadata.googleAuthToken = await getValidGoogleAuthToken();
             let mimeType = "application/octet-stream";
             if (metadata.filename.match(/\.txt$/i)) mimeType = "text/plain";
             else if (metadata.filename.match(/\.json$/i))
@@ -267,12 +301,33 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 token: metadata.googleAuthToken,
               });
             } catch (err) {
-              port.postMessage({
-                ok: false,
-                error: "Google Drive payload upload error",
-                details: err,
-              });
-              return;
+              // If 401, try refreshing token and retry once
+              if (err.message && err.message.includes("401")) {
+                await removeGoogleAuthToken();
+                metadata.googleAuthToken = await getValidGoogleAuthToken();
+                try {
+                  payloadDriveInfo = await uploadFileToGoogleDrive({
+                    bytes: fileBytes,
+                    filename: metadata.filename,
+                    mimeType,
+                    token: metadata.googleAuthToken,
+                  });
+                } catch (err2) {
+                  port.postMessage({
+                    ok: false,
+                    error: "Google Drive payload upload error (after refresh)",
+                    details: err2,
+                  });
+                  return;
+                }
+              } else {
+                port.postMessage({
+                  ok: false,
+                  error: "Google Drive payload upload error",
+                  details: err,
+                });
+                return;
+              }
             }
           }
           // Step 2: Compute hash and integrity_proof
