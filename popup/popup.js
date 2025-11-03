@@ -25,7 +25,7 @@ function handleCodexResponse(response) {
   }
   console.log("[popup] Codex entry response:", response);
   if (response && response.ok && response.entry) {
-    // If Google Drive zip, validate existence before export
+    // If Google Drive zip archive, validate existence before export
     let zipExists = true;
     let zipValidationMsg = "";
     if (
@@ -622,6 +622,20 @@ entryForm.addEventListener("submit", async (e) => {
   }
 });
 
+// Helper function to extract codex ID from entry
+function getCodexIdFromEntry() {
+  let codexId = "codex";
+  try {
+    const entry = JSON.parse(jsonResult.textContent);
+    if (entry && entry.id) {
+      codexId = entry.id;
+    }
+  } catch (err) {
+    console.warn("[popup] Could not parse codex entry for ID:", err);
+  }
+  return codexId;
+}
+
 downloadBtn.addEventListener("click", () => {
   const blob = new Blob([jsonResult.textContent], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -639,17 +653,7 @@ downloadZipBtn.addEventListener("click", () => {
     return;
   }
   
-  // Extract codex ID from the entry for filename
-  let codexId = "codex";
-  try {
-    const entry = JSON.parse(jsonResult.textContent);
-    if (entry && entry.id) {
-      codexId = entry.id;
-    }
-  } catch (err) {
-    console.warn("[popup] Could not parse codex entry for ID:", err);
-  }
-  
+  const codexId = getCodexIdFromEntry();
   const url = URL.createObjectURL(currentZipBlob);
   const a = document.createElement("a");
   a.href = url;
