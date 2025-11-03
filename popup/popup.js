@@ -1,4 +1,12 @@
 import { summarizeText } from "../lib/ai.js";
+import {
+  setStatusMessage,
+  toggleButtonVisibility,
+  showJsonResult,
+  showCertificateSummary,
+  showAISummary,
+  updateStepper
+} from "./popup-ui.js";
 
 // popup.js - Handles popup UI logic for Lockb0x Protocol Codex Forge
 
@@ -63,15 +71,11 @@ function handleCodexResponse(response) {
       updateCodexUI(response, payloadExists, payloadValidationMsg);
     }
   } else if (response && typeof response.ok !== "undefined") {
-    let errorMsg = "";
-    errorMsg += "Failed to generate entry.\n";
-    errorMsg +=
-      "Full response object:\n" + JSON.stringify(response, null, 2) + "\n";
+    let errorMsg = "Failed to generate entry.\n";
+    errorMsg += "Full response object:\n" + JSON.stringify(response, null, 2) + "\n";
     if (response && response.error) {
-      errorMsg += "Error:\n";
-      errorMsg += JSON.stringify(response.error, null, 2) + "\n";
+      errorMsg += "Error:\n" + JSON.stringify(response.error, null, 2) + "\n";
     }
-    // Always show the error array, even if empty or undefined
     if (response && "details" in response) {
       errorMsg += "Schema errors:\n";
       if (Array.isArray(response.details) && response.details.length > 0) {
@@ -80,45 +84,17 @@ function handleCodexResponse(response) {
         errorMsg += JSON.stringify(response.details, null, 2) + "\n";
       }
     }
-    showError(errorMsg, "Check error details above and try again.");
-    console.error(
-      "[popup] Failed to generate entry:",
-      JSON.stringify(response, null, 2),
-    );
-    // Log the entry object for debugging
+    setStatusMessage(errorMsg, "error", "Check error details above and try again.");
+    console.error("[popup] Failed to generate entry:", JSON.stringify(response, null, 2));
     if (response && response.entry) {
       console.log("[popup] Entry object:", response.entry);
     }
   }
 }
 // Update stepper UI for each step
-function updateStepper(step, status) {
-  const el = document.getElementById(step);
-  if (!el) return;
-  const statusSpan = el.querySelector(".step-status");
-  if (status === "done") {
-    statusSpan.textContent = "✔";
-    el.style.color = "#00796b";
-  } else if (status === "active") {
-    statusSpan.textContent = "...";
-    el.style.color = "#0277bd";
-  } else if (status === "error") {
-    statusSpan.textContent = "✖";
-    el.style.color = "#c62828";
-  } else {
-    statusSpan.textContent = "";
-    el.style.color = "";
-  }
-}
 // Utility to show error and recovery instructions in the popup
 function showError(message, recovery) {
-  if (statusDiv) {
-    statusDiv.textContent = `Error: ${message}`;
-    statusDiv.style.color = "#c62828";
-    if (recovery) {
-      statusDiv.textContent += `\nRecovery: ${recovery}`;
-    }
-  }
+  setStatusMessage(`Error: ${message}`, "error", recovery);
   if (typeof generateBtn !== 'undefined' && generateBtn) {
     generateBtn.disabled = false;
   }
@@ -127,47 +103,20 @@ function showError(message, recovery) {
 
 // Update Codex UI with entry and payload status
 function updateCodexUI(response, payloadExists, payloadValidationMsg) {
-  // Show Codex entry JSON
-  if (jsonResult) {
-    jsonResult.textContent =
-      response && response.entry ? JSON.stringify(response.entry, null, 2) : "";
-    jsonResult.style.display = response && response.entry ? "block" : "none";
+  showJsonResult(response && response.entry ? response.entry : null);
+  showCertificateSummary(response && response.entry && response.entry.certificate ? response.entry.certificate : null);
+  showAISummary(response && response.entry && response.entry.ai ? response.entry.ai : null);
+  if (payloadValidationMsg) {
+    setStatusMessage(payloadValidationMsg, payloadExists ? "success" : "error");
   }
-  // Show certificate summary if present
-  if (certificateSummary) {
-    certificateSummary.textContent =
-      response && response.entry && response.entry.certificate
-        ? "Certificate: " + JSON.stringify(response.entry.certificate, null, 2)
-        : "";
-    certificateSummary.style.display =
-      response && response.entry && response.entry.certificate
-        ? "block"
-        : "none";
-  }
-  // Show AI summary if present
-  if (aiSummary) {
-    aiSummary.textContent =
-      response && response.entry && response.entry.ai
-        ? "AI Summary: " + JSON.stringify(response.entry.ai, null, 2)
-        : "";
-    aiSummary.style.display =
-      response && response.entry && response.entry.ai ? "block" : "none";
-  }
-  // Show payload validation message if provided
-  if (payloadValidationMsg && statusDiv) {
-    statusDiv.textContent = payloadValidationMsg;
-    statusDiv.style.color = payloadExists ? "#00796b" : "#c62828";
-  }
-  // Show success message and update button visibility
-  if (response && response.ok && response.entry && statusDiv) {
-    statusDiv.textContent =
-      "Codex entry generated successfully." +
-      (payloadValidationMsg ? "\n" + payloadValidationMsg : "");
-    statusDiv.style.color = "#00796b";
-    // Hide generate button, show download/copy buttons
-    if (generateBtn) generateBtn.style.display = "none";
-    if (downloadBtn) downloadBtn.style.display = "inline-block";
-    if (copyBtn) copyBtn.style.display = "inline-block";
+  if (response && response.ok && response.entry) {
+    setStatusMessage(
+      "Codex entry generated successfully." + (payloadValidationMsg ? "\n" + payloadValidationMsg : ""),
+      "success"
+    );
+    toggleButtonVisibility("generateBtn", false);
+    toggleButtonVisibility("downloadBtn", true);
+    toggleButtonVisibility("copyBtn", true);
   }
 }
 
@@ -189,7 +138,7 @@ if (!googleLogOutBtn) {
 const generateBtn = document.getElementById("generateBtn");
 const entryForm = document.getElementById("entryForm");
 const jsonResult = document.getElementById("jsonResult");
-const certificateSummary = document.getElementById("certificateSummary");
+// ...existing code...
 const aiSummary = document.getElementById("aiSummary");
 const downloadBtn = document.getElementById("downloadBtn");
 const copyBtn = document.getElementById("copyBtn");
@@ -197,7 +146,7 @@ const statusDiv = document.getElementById("status");
 
 let extractedData = "";
 let extractedBytes = null;
-let metadata = {};
+// ...existing code...
 
 import {
   getGoogleAuthToken,
@@ -223,25 +172,7 @@ if (authStatus && authStatus.parentNode) {
   authStatus.parentNode.insertBefore(userProfileDiv, authStatus.nextSibling);
 }
 
-function fetchGoogleProfile(token) {
-  return fetch(
-    "https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses,photos",
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    },
-  )
-    .then((res) => res.json())
-    .then((profile) => {
-      if (!profile || !profile.names || !profile.emailAddresses) return null;
-      return {
-        name: profile.names[0].displayName,
-        email: profile.emailAddresses[0].value,
-        photo:
-          profile.photos && profile.photos[0] ? profile.photos[0].url : null,
-      };
-    })
-    .catch(() => null);
-}
+// ...existing code...
 
 async function updateAuthUI() {
   const anchorIsGoogle = anchorType && anchorType.value === "google";
