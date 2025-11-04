@@ -52,6 +52,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const result = await handleSmallFileUpload({ ...msg.payload });
       if (result.ok) {
           // Archive and upload zip after successful small file upload
+          console.log('[background] Invoking processCodexEntryAndArchive for small file upload');
           const payloadBytes = new Uint8Array(msg.payload.bytes);
           const payloadFilename = msg.payload.filename;
           const codexEntry = result.entry;
@@ -64,8 +65,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           let zipResult = null;
           try {
             zipResult = await processCodexEntryAndArchive({ payloadBytes, payloadFilename, codexEntry, storageMetadata, driveToken });
+            console.log('[background] Zip workflow result (small file):', zipResult);
           } catch (err) {
             zipResult = { error: err.message };
+            console.error('[background] Error in zip workflow (small file):', err);
           }
         sendResponse({
           ok: true,
@@ -112,6 +115,7 @@ chrome.runtime.onConnect.addListener(function (port) {
       const result = await handleLargeFileUpload(metadata, chunks);
       if (result.ok) {
         // Archive and upload zip after successful large file upload
+        console.log('[background] Invoking processCodexEntryAndArchive for large file upload');
         // Reconstruct payload bytes from chunks
         const payloadBytes = new Uint8Array([].concat(...chunks));
         const payloadFilename = metadata.filename;
@@ -125,8 +129,10 @@ chrome.runtime.onConnect.addListener(function (port) {
         let zipResult = null;
         try {
           zipResult = await processCodexEntryAndArchive({ payloadBytes, payloadFilename, codexEntry, storageMetadata, driveToken });
+          console.log('[background] Zip workflow result (large file):', zipResult);
         } catch (err) {
           zipResult = { error: err.message };
+          console.error('[background] Error in zip workflow (large file):', err);
         }
         port.postMessage({
           ok: true,
